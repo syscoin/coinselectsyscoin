@@ -4,16 +4,16 @@ var BN = require('bn.js')
 var ext = require('../bn-extensions')
 
 tape('utils', function (t) {
-  t.test('bnOrNaN', function (t) {
+  t.test('uintOrNull', function (t) {
     t.plan(8)
-    t.ok(utils.bnOrNaN(new BN(1)).cmp(ext.BN_ONE) === 0)
-    t.equal(isNaN(utils.bnOrNaN('')), true)
-    t.equal(isNaN(utils.bnOrNaN(Infinity)), true)
-    t.equal(isNaN(utils.bnOrNaN(NaN)), true)
-    t.equal(isNaN(utils.bnOrNaN('1')), true)
-    t.equal(isNaN(utils.bnOrNaN('1.1')), true)
-    t.equal(isNaN(utils.bnOrNaN(1.1)), true)
-    t.equal(isNaN(utils.bnOrNaN(-1)), true)
+    t.ok(utils.uintOrNull(new BN(1)).cmp(ext.BN_ONE) === 0)
+    t.equal(!utils.uintOrNull(''), true)
+    t.equal(!utils.uintOrNull(Infinity), true)
+    t.equal(!utils.uintOrNull(NaN), true)
+    t.equal(!utils.uintOrNull('1'), true)
+    t.equal(!utils.uintOrNull('1.1'), true)
+    t.equal(!utils.uintOrNull(1.1), true)
+    t.equal(!utils.uintOrNull(-1), true)
   })
 
   t.end()

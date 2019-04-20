@@ -2,18 +2,18 @@ var BN = require('bn.js')
 var ext = require('./bn-extensions')
 
 // baseline estimates, used to improve performance
-var TX_BASE_SIZE = new BN('10')
+var TX_BASE_SIZE = new BN(10)
 
 var TX_INPUT_SIZE = {
-  LEGACY: new BN('148'),
-  P2SH: new BN('92'),
-  BECH32: new BN('69')
+  LEGACY: new BN(148),
+  P2SH: new BN(92),
+  BECH32: new BN(69)
 }
 
 var TX_OUTPUT_SIZE = {
-  LEGACY: new BN('34'),
-  P2SH: new BN('32'),
-  BECH32: new BN('31')
+  LEGACY: new BN(34),
+  P2SH: new BN(32),
+  BECH32: new BN(31)
 }
 
 function inputBytes (input) {
@@ -32,17 +32,16 @@ function dustThreshold (output, feeRate) {
 function transactionBytes (inputs, outputs) {
   return TX_BASE_SIZE
     .add(inputs.reduce(function (a, x) {
-      return a.add(inputBytes(x))
+      return ext.add(a, inputBytes(x))
     }, ext.BN_ZERO))
     .add(outputs.reduce(function (a, x) {
-      return a.add(outputBytes(x))
+      return ext.add(a, outputBytes(x))
     }, ext.BN_ZERO))
 }
 
-function bnOrNaN (v) {
-  if (!isFinite(v)) return NaN
-  if (!BN.isBN(v)) return NaN
-  if (v.isNeg()) return NaN
+function uintOrNull (v) {
+  if (!BN.isBN(v)) return null
+  if (v.isNeg()) return null
   return v
 }
 
@@ -56,7 +55,7 @@ function sumForgiving (range) {
 
 function sumOrNaN (range) {
   return range.reduce(function (a, x) {
-    return ext.add(a, bnOrNaN(x.value))
+    return ext.add(a, uintOrNull(x.value))
   }, ext.BN_ZERO)
 }
 
@@ -73,7 +72,7 @@ function finalize (inputs, outputs, feeRate) {
   }
 
   var fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs))
-  if (!isFinite(fee)) return { fee: ext.mul(feeRate, bytesAccum) }
+  if (!fee) return { fee: ext.mul(feeRate, bytesAccum) }
 
   return {
     inputs: inputs,
@@ -90,5 +89,5 @@ module.exports = {
   sumOrNaN: sumOrNaN,
   sumForgiving: sumForgiving,
   transactionBytes: transactionBytes,
-  bnOrNaN: bnOrNaN
+  uintOrNull: uintOrNull
 }

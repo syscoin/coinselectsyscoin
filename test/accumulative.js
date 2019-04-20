@@ -11,14 +11,14 @@ fixtures.forEach(function (f) {
 
     t.same(actual.inputs, f.expected.inputs)
     t.same(actual.outputs, f.expected.outputs)
-    if (f.expected.fee) t.ok(actual.fee.cmp(f.expected.fee) === 0)
+    if (f.expected.fee) t.ok(actual.fee.eq(f.expected.fee))
     else t.ok(actual.fee === f.expected.fee)
 
     if (actual.inputs) {
       var feedback = coinAccum(actual.inputs, actual.outputs, f.feeRate)
       t.same(feedback.inputs, f.expected.inputs)
       t.same(feedback.outputs, f.expected.outputs)
-      if (f.expected.fee) t.ok(feedback.fee.cmp(f.expected.fee) === 0)
+      if (f.expected.fee) t.ok(feedback.fee.eq(f.expected.fee))
       else t.ok(actual.fee === f.expected.fee)
     }
 

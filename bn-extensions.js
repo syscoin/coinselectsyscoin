@@ -1,63 +1,68 @@
 var BN = require('bn.js')
+var slice = Array.prototype.slice
 
 var BN_ZERO = new BN(0)
 var BN_ONE = new BN(1)
 
-function mul (multiplicand, multiplier) {
-  if (!BN.isBN(multiplicand) || !BN.isBN(multiplier)) return NaN
-
-  return multiplicand.mul(multiplier)
+function add () {
+  var args = slice.call(arguments)
+  return args.reduce(_add)
 }
 
-function div (dividend, divisor) {
-  if (!BN.isBN(dividend) || !BN.isBN(divisor)) return NaN
-  if (divisor.cmp(BN_ZERO) === 0) return Infinity
-
-  return dividend.div(divisor)
+function _add (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return null
+  return a.add(b)
 }
 
-function add (arg1, arg2, arg3) {
-  // Add two items
-  if (!BN.isBN(arg1) || !BN.isBN(arg2)) return NaN
-  if (typeof arg3 === 'undefined') return arg1.add(arg2)
-
-  // Add three items
-  if (!BN.isBN(arg3)) return NaN
-  return arg1.add(arg2).add(arg3)
+function sub () {
+  var args = slice.call(arguments)
+  return args.reduce(_sub)
 }
 
-function sub (arg1, arg2, arg3) {
-  // Subtract two items
-  if (!BN.isBN(arg1) || !BN.isBN(arg2)) return NaN
-  if (typeof arg3 === 'undefined') return arg1.sub(arg2)
-
-  // Subtract three items
-  if (!BN.isBN(arg3)) return NaN
-  return arg1.sub(arg2).sub(arg3)
+function _sub (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return null
+  return a.sub(b)
 }
 
-function shrn (argument, shiftBy) {
-  if (!BN.isBN(argument)) return NaN
-  if (BN.isBN(shiftBy)) shiftBy = shiftBy.toNumber()
-  if (typeof shiftBy !== 'number') return NaN
-
-  return argument.shrn(shiftBy)
+function mul () {
+  var args = slice.call(arguments)
+  return args.reduce(_mul)
 }
 
-function isZero (argument) {
-  if (!BN.isBN(argument)) return false
-  if (argument.cmp(BN_ZERO) === 0) return true
-  return false
+function _mul (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return null
+  return a.mul(b)
 }
 
-function lt (subject, argument) {
-  if (!BN.isBN(argument) || !BN.isBN(subject)) return false
-  return subject.lt(argument)
+function div () {
+  var args = slice.call(arguments)
+  return args.reduce(_div)
 }
 
-function gt (subject, argument) {
-  if (!BN.isBN(argument) || !BN.isBN(subject)) return false
-  return subject.gt(argument)
+function _div (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return null
+  if (b.isZero()) return null
+  return a.div(b)
+}
+
+function isZero (v) {
+  if (!BN.isBN(v)) return false
+  return v.isZero()
+}
+
+function eq (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.eq(b)
+}
+
+function lt (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.lt(b)
+}
+
+function gt (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.gt(b)
 }
 
 module.exports = {
@@ -65,8 +70,8 @@ module.exports = {
   div: div,
   add: add,
   sub: sub,
-  shrn: shrn,
   isZero: isZero,
+  eq: eq,
   lt: lt,
   gt: gt,
   BN_ZERO: BN_ZERO,

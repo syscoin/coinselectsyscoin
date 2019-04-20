@@ -4,7 +4,7 @@ var ext = require('./bn-extensions')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
 module.exports = function accumulative (utxos, outputs, feeRate) {
-  if (!isFinite(utils.bnOrNaN(feeRate))) return {}
+  if (!utils.uintOrNull(feeRate)) return {}
   var bytesAccum = utils.transactionBytes([], outputs)
 
   var inAccum = ext.BN_ZERO
@@ -15,17 +15,12 @@ module.exports = function accumulative (utxos, outputs, feeRate) {
     var utxo = utxos[i]
     var utxoBytes = utils.inputBytes(utxo)
     var utxoFee = ext.mul(feeRate, utxoBytes)
-    var utxoValue = utils.bnOrNaN(utxo.value)
+    var utxoValue = utils.uintOrNull(utxo.value)
 
     // skip detrimental input
-    var feeIsMoreThanValue = ext.gt(utxoFee, utxoValue)
-    // utxoFee > utxoValue
-    if (feeIsMoreThanValue) {
+    if (ext.gt(utxoFee, utxoValue)) {
       if (i === utxos.length - 1) {
-        var bytesSum = ext.add(bytesAccum, utxoBytes)
-        return {
-          fee: ext.mul(feeRate, bytesSum)
-        }
+        return { fee: ext.mul(feeRate, ext.add(bytesAccum, utxoBytes)) }
       }
       continue
     }
@@ -42,7 +37,5 @@ module.exports = function accumulative (utxos, outputs, feeRate) {
     return utils.finalize(inputs, outputs, feeRate)
   }
 
-  return {
-    fee: feeRate.mul(bytesAccum)
-  }
+  return { fee: ext.mul(feeRate, bytesAccum) }
 }
