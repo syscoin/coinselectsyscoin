@@ -1,7 +1,7 @@
 {
-  "name": "coinselect",
+  "name": "coinselectsyscoin",
   "version": "3.1.11",
-  "description": "A transaction input selection module for bitcoin.",
+  "description": "A transaction input selection module for syscoin.",
   "keywords": [
     "coinselect",
     "coin",
@@ -14,14 +14,15 @@
     "fee",
     "optimization",
     "optimizing",
-    "bitcoin"
+    "bitcoin",
+    "syscoin"
   ],
-  "homepage": "https://github.com/dcousens/coinselect",
+  "homepage": "https://github.com/syscoin/coinselectsyscoin",
   "bugs": {
-    "url": "https://github.com/dcousens/coinselect/issues"
+    "url": "https://github.com/syscoin/coinselectsyscoin/issues"
   },
   "license": "MIT",
-  "author": "Daniel Cousens",
+  "author": "Jagdeep Sidhu",
   "files": [
     "bn-extensions.js",
     "accumulative.js",
@@ -34,7 +35,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dcousens/coinselect.git"
+    "url": "https://github.com/syscoin/coinselectsyscoin.git"
   },
   "scripts": {
     "coverage": "nyc --check-coverage --branches 100 --functions 100 tape test/*.js",
