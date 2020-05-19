@@ -65,15 +65,51 @@ function gt (a, b) {
   return a.gt(b)
 }
 
+function mod (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return null
+  return a.mod(b)
+}
+
+function or (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.or(b)
+}
+
+function and (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.and(b)
+}
+
+function shln (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.shln(b)
+}
+
+function shrn (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.shrn(b)
+}
+
+function neg (a) {
+  if (!BN.isBN(a)) return false
+  return a.neg()
+}
+
 module.exports = {
   mul: mul,
   div: div,
+  mod: mod,
   add: add,
   sub: sub,
   isZero: isZero,
   eq: eq,
   lt: lt,
   gt: gt,
+  or: or,
+  and: and,
+  shln: shln,
+  shrn: shrn,
+  neg: neg,
   BN_ZERO: BN_ZERO,
   BN_ONE: BN_ONE
 }

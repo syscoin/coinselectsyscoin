@@ -21,6 +21,9 @@ function inputBytes (input) {
 }
 
 function outputBytes (output) {
+  if(output.script) {
+    return output.script.length;
+  }
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
 
@@ -77,13 +80,30 @@ function finalize (inputs, outputs, feeRate) {
   return {
     inputs: inputs,
     outputs: outputs,
-    fee: fee
+    fee: fee,
+    feeNeeded: remainderAfterExtraOutput,
+  }
+}
+
+function finalizeAssets (inputs, outputs, assetAllocations) {
+  if(!inputs || !outputs || !assetAllocation) {
+    return {
+      inputs: null,
+      outputs: null,
+      assetAllocations: null,
+    }
+  }
+  return {
+    inputs: inputs,
+    outputs: outputs,
+    assetAllocations: assetAllocations,
   }
 }
 
 module.exports = {
   dustThreshold: dustThreshold,
   finalize: finalize,
+  finalizeAssets: finalizeAssets,
   inputBytes: inputBytes,
   outputBytes: outputBytes,
   sumOrNaN: sumOrNaN,
