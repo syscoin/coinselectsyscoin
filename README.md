@@ -5,9 +5,9 @@
 
 [![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)
 
-An unspent transaction output (UTXO) selection module for bitcoin.
+An unspent transaction output (UTXO) selection module for syscoin.
 
-**WARNING:** Value units are in `satoshi`s, **not** Bitcoin.
+**WARNING:** Value units are in `satoshi`s, **not** Syscoin.
 
 
 ## Algorithms
