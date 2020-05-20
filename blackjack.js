@@ -19,7 +19,7 @@ module.exports = function blackjack (utxos, inputs, outputs, feeRate) {
     var inputBytes = utils.inputBytes(input);
     var fee = ext.mul(feeRate, ext.add(bytesAccum, inputBytes));
     var inputValue = utils.uintOrNull(input.value);
-
+    
     // would it waste value?
     if (ext.gt(ext.add(inAccum, inputValue), ext.add(outAccum, fee, threshold))) continue;
 
@@ -36,38 +36,45 @@ module.exports = function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-module.exports = function blackjackAsset (utxos, assetArray, feeRate) {
+module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
   let dustAmount = util.dustThreshold({}, feeRate);
   let mapAssetAmounts = [];
+  let inputs = [];
+  let outputs = [];
   let assetAllocations = [];
   for (var i = 0; i < utxos.length; ++i) {
-    var input = utxos[i]
+    let input = utxos[i];
     if(!input.assetInfo) {
       continue;
     }
     mapAssetAmounts[string(input.assetInfo.assetGuid) + input.assetInfo.value.toString(10)] = i;
   }
   
-  var inputs = []
+  
   assetArray.forEach(asset => {
-    let assetAllocation = assetAllocations[asset.assetGuid]
+    let assetAllocation = assetAllocations[asset.assetGuid];
     if(assetAllocation.length === 0) {
-      assetAllocation = []
+      assetAllocation = [];
     }
 
     asset.outputs.forEach(output => {
-      outputs.push({address: output.address, value: dustAmount})
-      assetAllocation.push({n: index++, value: output.value})
-    })
+      outputs.push({address: output.address, value: dustAmount});
+      assetAllocation.push({n: index++, value: output.value});
+    });
 
-    var assetOutAccum = utils.sumOrNaN(asset.outputs)
-    var index = mapAssetAmounts[string(asset.assetGuid) + assetOutAccum.toString(10)]
+    // if not expecting asset to be funded, we just want outputs then return here without inputs
+    if(isNonAssetFunded) {
+      return utils.finalizeAssets(inputs, outputs, assetAllocations);
+    }
+
+    let assetOutAccum = utils.sumOrNaN(asset.outputs);
+    var index = mapAssetAmounts[string(asset.assetGuid) + assetOutAccum.toString(10)];
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {
-      inputs.push(utxos[index])
+      inputs.push(utxos[index]);
     } else {
-      return utils.finalizeAssets(null, null, null)
+      return utils.finalizeAssets(null, null, null);
     }
   })
-  return utils.finalizeAssets(inputs, outputs, assetAllocations)
+  return utils.finalizeAssets(inputs, outputs, assetAllocations);
 }

@@ -43,7 +43,7 @@ module.exports = function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate) {
+module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
   let dustAmount = util.dustThreshold({}, feeRate);
   let assetAllocations = [];
   let index = 0;
@@ -58,9 +58,15 @@ module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate) {
     }
 
     asset.outputs.forEach(output => {
-      outputs.push({address: output.address, value: dustAmount});
-      assetAllocation.push({n: index++, value: output.value});
+      assetAllocation.push({n: outputs.length, value: output.value});
+      outputs.push({address: output.address, type: 'BECH32', value: dustAmount});
     });
+
+    // if not expecting asset to be funded, we just want outputs then return here without inputs
+    if(isNonAssetFunded) {
+      return utils.finalizeAssets(inputs, outputs, assetAllocations);
+    }
+
     let assetOutAccum = utils.sumOrNaN(asset.outputs);
     // order by descending asset amounts for this asset guid
     let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid == asset.assetGuid);
@@ -78,10 +84,10 @@ module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate) {
       if (ext.gt(inAccum, assetOutAccum)) {
         let changeAsset = ext.sub(inAccum, assetOutAccum);
         // add output as dust amount (smallest possible sys output)
-        let output = {address: asset.changeAddress, value: dustAmount};
-        outputs.push(output);
+        let output = {address: asset.changeAddress, type: 'BECH32', value: dustAmount};
         // but asset commitment will have the full asset change value
-        assetAllocation.push({n: index++, value: changeAsset});
+        assetAllocation.push({n: outputs.length, value: changeAsset});
+        outputs.push(output);
         funded = true;
         break;
       // no change, in = out
@@ -90,9 +96,9 @@ module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate) {
         break;
       }
     });
-    // shortcut when we know its not funded
+    // shortcut when we know an asset spend is not funded
     if(!funded) {
-      return utils.finalizeAssets(null, null, null, null);
+      return utils.finalizeAssets(null, null, null, null, null);
     }
   })
   return utils.finalizeAssets(inputs, outputs, assetAllocations);

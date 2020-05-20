@@ -21,11 +21,11 @@ module.exports = function coinSelect (utxos, inputs, outputs, feeRate) {
   return accumulative(utxos, inputs, outputs, feeRate);
 }
 
-module.exports = function coinSelectAsset (utxos, assetArray, feeRate) {
+module.exports = function coinSelectAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjackAsset(utxos, assetArray, feeRate);
+  var base = blackjackAsset(utxos, assetArray, feeRate, isNonAssetFunded);
   if (base.inputs) return base;
 
   // else, try the accumulative strategy
-  return accumulativeAsset(utxos, assetArray, feeRate);
+  return accumulativeAsset(utxos, assetArray, feeRate, isNonAssetFunded);
 }
