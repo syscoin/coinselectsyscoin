@@ -81,7 +81,6 @@ function finalize (inputs, outputs, feeRate) {
     inputs: inputs,
     outputs: outputs,
     fee: fee,
-    feeNeeded: remainderAfterExtraOutput,
   }
 }
 

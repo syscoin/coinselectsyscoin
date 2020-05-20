@@ -46,7 +46,6 @@ module.exports = function accumulative (utxos, inputs, outputs, feeRate) {
 module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
   let dustAmount = util.dustThreshold({}, feeRate);
   let assetAllocations = [];
-  let index = 0;
   let outputs = [];
   let inputs = [];
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally

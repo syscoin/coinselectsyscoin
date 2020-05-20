@@ -47,7 +47,7 @@ module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAsset
     if(!input.assetInfo) {
       continue;
     }
-    mapAssetAmounts[string(input.assetInfo.assetGuid) + input.assetInfo.value.toString(10)] = i;
+    mapAssetAmounts[string(input.assetInfo.assetGuid) + "-" + input.assetInfo.value.toString(10)] = i;
   }
   
   
@@ -58,8 +58,8 @@ module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAsset
     }
 
     asset.outputs.forEach(output => {
-      outputs.push({address: output.address, value: dustAmount});
-      assetAllocation.push({n: index++, value: output.value});
+      assetAllocation.push({n: outputs.length, value: output.value});
+      outputs.push({address: output.address, type: 'BECH32', value: dustAmount});
     });
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
@@ -68,7 +68,7 @@ module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAsset
     }
 
     let assetOutAccum = utils.sumOrNaN(asset.outputs);
-    var index = mapAssetAmounts[string(asset.assetGuid) + assetOutAccum.toString(10)];
+    var index = mapAssetAmounts[string(asset.assetGuid) + "-" + assetOutAccum.toString(10)];
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {
       inputs.push(utxos[index]);
