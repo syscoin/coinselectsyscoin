@@ -1,4 +1,4 @@
-var coinAccum = require('../accumulative')
+var accumulative = require('../accumulative')
 var fixtures = require('./fixtures/accumulative')
 var fixturesasset = require('./fixturesasset/accumulativeasset')
 var tape = require('tape')
@@ -6,9 +6,10 @@ var utils = require('./_utils')
 
 fixtures.forEach(function (f) {
   tape(f.description, function (t) {
-    var inputs = utils.expand(f.inputs, true)
+    var utxos = utils.expand(f.inputs, true)
     var outputs = utils.expand(f.outputs)
-    var actual = coinAccum(inputs, outputs, f.feeRate)
+    var inputs = []
+    var actual = accumulative.accumulative(utxos, inputs, outputs, f.feeRate)
 
     t.same(actual.inputs, f.expected.inputs)
     t.same(actual.outputs, f.expected.outputs)
@@ -16,7 +17,8 @@ fixtures.forEach(function (f) {
     else t.ok(actual.fee === f.expected.fee)
 
     if (actual.inputs) {
-      var feedback = coinAccum(actual.inputs, actual.outputs, f.feeRate)
+      var inputs = []
+      var feedback = accumulative.accumulative(actual.inputs, inputs, actual.outputs, f.feeRate)
       t.same(feedback.inputs, f.expected.inputs)
       t.same(feedback.outputs, f.expected.outputs)
       if (f.expected.fee) t.ok(feedback.fee.eq(f.expected.fee))
@@ -28,9 +30,9 @@ fixtures.forEach(function (f) {
 })
 fixturesasset.forEach(function (f) {
   tape(f.description, function (t) {
-    var inputs = utils.expand(f.inputs, true)
+    var utxos = utils.expand(f.inputs, true)
     var outputs = utils.expand(f.outputs)
-    var actual = coinAccum(inputs, outputs, f.feeRate)
+    var actual = accumulative.accumulativeAsset(utxos, outputs, f.feeRate, f.isNonAssetFunded)
 
     t.same(actual.inputs, f.expected.inputs)
     t.same(actual.outputs, f.expected.outputs)
@@ -38,7 +40,7 @@ fixturesasset.forEach(function (f) {
     else t.ok(actual.fee === f.expected.fee)
 
     if (actual.inputs) {
-      var feedback = coinAccum(actual.inputs, actual.outputs, f.feeRate)
+      var feedback = accumulative.accumulativeAsset(actual.inputs, actual.outputs, f.feeRate, f.isNonAssetFunded)
       t.same(feedback.inputs, f.expected.inputs)
       t.same(feedback.outputs, f.expected.outputs)
       if (f.expected.fee) t.ok(feedback.fee.eq(f.expected.fee))
