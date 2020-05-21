@@ -1,6 +1,6 @@
 var coinselect = require('../')
 var fixtures = require('./fixtures')
-var fixturesAsset = require('./fixturesasst')
+var fixturesAsset = require('./fixturesasset')
 var tape = require('tape')
 var utils = require('./_utils')
 

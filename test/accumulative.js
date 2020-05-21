@@ -1,6 +1,6 @@
 var accumulative = require('../accumulative')
 var fixtures = require('./fixtures/accumulative')
-var fixturesasset = require('./fixturesasset/accumulativeasset')
+
 var tape = require('tape')
 var utils = require('./_utils')
 
@@ -27,12 +27,14 @@ fixtures.forEach(function (f) {
 
     t.end()
   })
-})
+})/*
+var fixturesasset = require('./fixturesasset/accumulativeasset')
 fixturesasset.forEach(function (f) {
   tape(f.description, function (t) {
-    var utxos = utils.expand(f.inputs, true)
+    var utxos = utils.expand(f.utxos, true)
+    const utxoAssets = utxos.filter(utxo => utxo.assetInfo != null)
     var outputs = utils.expand(f.outputs)
-    var actual = accumulative.accumulativeAsset(utxos, outputs, f.feeRate, f.isNonAssetFunded)
+    var actual = accumulative.accumulativeAsset(utxoAssets, outputs, f.feeRate, f.isNonAssetFunded)
 
     t.same(actual.inputs, f.expected.inputs)
     t.same(actual.outputs, f.expected.outputs)
@@ -49,4 +51,4 @@ fixturesasset.forEach(function (f) {
 
     t.end()
   })
-})
+}) */

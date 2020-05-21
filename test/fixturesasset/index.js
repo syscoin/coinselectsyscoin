@@ -499,8 +499,8 @@ module.exports = [{
     new BN(20000)
   ],
   outputs: [
-    new BN('10000.25'),
-    new BN('1200.5')
+    new BN(10000.25),
+    new BN(1200.5)
   ],
   expected: {
     fee: new BN(2260)

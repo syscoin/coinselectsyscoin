@@ -65,6 +65,11 @@ function gt (a, b) {
   return a.gt(b)
 }
 
+function gte (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.gte(b)
+}
+
 function mod (a, b) {
   if (!BN.isBN(a) || !BN.isBN(b)) return null
   return a.mod(b)
@@ -105,6 +110,7 @@ module.exports = {
   eq: eq,
   lt: lt,
   gt: gt,
+  gte: gte,
   or: or,
   and: and,
   shln: shln,
