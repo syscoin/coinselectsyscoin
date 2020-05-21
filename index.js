@@ -9,23 +9,25 @@ function utxoScore (x, feeRate) {
 }
 
 module.exports = function coinSelect (utxos, inputs, outputs, feeRate) {
-  utxos = utxos.concat().sort(function (a, b) {
+  let utxoSys = utxos.filter(utxo => !utxo.assetInfo);
+  utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate));
   })
 
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack(utxos, inputs, outputs, feeRate);
+  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate);
   if (base.inputs) return base;
 
   // else, try the accumulative strategy
-  return accumulative(utxos, inputs, outputs, feeRate);
+  return accumulative.accumulative(utxoSys, inputs, outputs, feeRate);
 }
 
 module.exports = function coinSelectAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
+  let utxoAssets = utxos.filter(utxo => utxo.assetInfo != null);
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjackAsset(utxos, assetArray, feeRate, isNonAssetFunded);
+  var base = blackjack.blackjackAsset(utxoAssets, assetArray, feeRate, isNonAssetFunded);
   if (base.inputs) return base;
 
   // else, try the accumulative strategy
-  return accumulativeAsset(utxos, assetArray, feeRate, isNonAssetFunded);
+  return accumulative.accumulativeAsset(utxoAssets, assetArray, feeRate, isNonAssetFunded);
 }
