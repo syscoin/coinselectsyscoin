@@ -24,8 +24,8 @@ fixtures.forEach(function (f) {
 })
 fixturesAsset.forEach(function (f) {
   tape(f.description, function (t) {
-    var utxos = utils.expand(f.inputs, true)
-    var outputs = utils.expand(f.assetArray)
+    var utxos = utils.expand(f.utxos, true)
+    var outputs = utils.expand(f.assetMap)
     var actual = coinselect.coinSelectAsset(utxos, outputs, f.feeRate, f.isNonAssetFunded)
 
     t.same(actual, f.expected)

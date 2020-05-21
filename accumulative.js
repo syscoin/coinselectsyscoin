@@ -43,21 +43,21 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({}, feeRate)
   const assetAllocations = []
   const outputs = []
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
-  assetArray.forEach(asset => {
-    let assetAllocation = assetAllocations[asset.assetGuid]
+  for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
+    let assetAllocation = assetAllocations[assetGuid]
     if (assetAllocation.length === 0) {
       assetAllocation = []
     }
 
-    asset.outputs.forEach(output => {
+    valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ address: output.address, type: 'BECH32', value: dustAmount })
+      outputs.push({ address: output.address, assetInfo: {assetGuid: assetGuid, value: output.value}, type: 'BECH32', value: dustAmount })
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
@@ -65,9 +65,9 @@ function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
-    const assetOutAccum = utils.sumOrNaN(asset.outputs)
+    const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
     // order by descending asset amounts for this asset guid
-    let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === asset.assetGuid)
+    let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
     utxoAsset = utxoAsset.concat().sort(function (a, b) {
       return ext.sub(b.assetInfo.value, a.assetInfo.value)
     })
@@ -82,7 +82,7 @@ function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
       if (ext.gt(inAccum, assetOutAccum)) {
         const changeAsset = ext.sub(inAccum, assetOutAccum)
         // add output as dust amount (smallest possible sys output)
-        const output = { address: asset.changeAddress, type: 'BECH32', value: dustAmount }
+        const output = { type: 'BECH32', assetInfo: utxo.assetInfo, value: dustAmount }
         // but asset commitment will have the full asset change value
         assetAllocation.push({ n: outputs.length, value: changeAsset })
         outputs.push(output)
@@ -98,7 +98,7 @@ function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
     if (!funded) {
       return utils.finalizeAssets(null, null, null, null, null)
     }
-  })
+  }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
 }
 

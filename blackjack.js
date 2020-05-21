@@ -38,7 +38,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
+function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({}, feeRate)
   const mapAssetAmounts = []
   const inputs = []
@@ -52,15 +52,15 @@ function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
     mapAssetAmounts[String(input.assetInfo.assetGuid) + '-' + input.assetInfo.value.toString(10)] = i
   }
 
-  assetArray.forEach(asset => {
-    let assetAllocation = assetAllocations[asset.assetGuid]
+  for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
+    let assetAllocation = assetAllocations[assetGuid]
     if (assetAllocation.length === 0) {
       assetAllocation = []
     }
 
-    asset.outputs.forEach(output => {
+    valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ address: output.address, type: 'BECH32', value: dustAmount })
+      outputs.push({ address: output.address, assetInfo: {assetGuid: assetGuid, value: output.value}, type: 'BECH32', value: dustAmount })
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
@@ -68,15 +68,15 @@ function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
-    const assetOutAccum = utils.sumOrNaN(asset.outputs)
-    var index = mapAssetAmounts[String(asset.assetGuid) + '-' + assetOutAccum.toString(10)]
+    const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    var index = mapAssetAmounts[String(assetGuid) + '-' + assetOutAccum.toString(10)]
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {
       inputs.push(utxos[index])
     } else {
       return utils.finalizeAssets(null, null, null)
     }
-  })
+  }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
 }
 
