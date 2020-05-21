@@ -1,6 +1,6 @@
 var coinselect = require('../')
 var fixtures = require('./fixtures')
-var fixturesAsset = require('./fixturesasset')
+
 var tape = require('tape')
 var utils = require('./_utils')
 
@@ -22,6 +22,8 @@ fixtures.forEach(function (f) {
     t.end()
   })
 })
+/*
+var fixturesAsset = require('./fixturesasset')
 fixturesAsset.forEach(function (f) {
   tape(f.description, function (t) {
     var utxos = utils.expand(f.utxos, true)
@@ -36,4 +38,4 @@ fixturesAsset.forEach(function (f) {
 
     t.end()
   })
-})
+}) */

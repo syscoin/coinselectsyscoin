@@ -17,14 +17,14 @@ var TX_OUTPUT_SIZE = {
 }
 
 function inputBytes (input) {
-  return TX_INPUT_SIZE[input.type] || TX_INPUT_SIZE.BECH32
+  return TX_INPUT_SIZE[input.type] || TX_INPUT_SIZE.LEGACY
 }
 
 function outputBytes (output) {
   if (output.script) {
     return output.script.length
   }
-  return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.BECH32
+  return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
 
 function dustThreshold (output, feeRate) {

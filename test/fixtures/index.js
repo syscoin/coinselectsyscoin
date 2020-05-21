@@ -493,20 +493,6 @@ module.exports = [{
   }
 },
 {
-  description: '2 outputs, with float values (NaN)',
-  feeRate: new BN(10),
-  inputs: [
-    new BN(20000)
-  ],
-  outputs: [
-    new BN(10000.25),
-    new BN(1200.5)
-  ],
-  expected: {
-    fee: new BN(2260)
-  }
-},
-{
   description: '2 outputs, string values (NaN)',
   feeRate: new BN(10),
   inputs: [
