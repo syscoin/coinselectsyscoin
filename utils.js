@@ -21,8 +21,8 @@ function inputBytes (input) {
 }
 
 function outputBytes (output) {
-  if(output.script) {
-    return output.script.length;
+  if (output.script) {
+    return output.script.length
   }
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
@@ -80,22 +80,22 @@ function finalize (inputs, outputs, feeRate) {
   return {
     inputs: inputs,
     outputs: outputs,
-    fee: fee,
+    fee: fee
   }
 }
 
 function finalizeAssets (inputs, outputs, assetAllocations) {
-  if(!inputs || !outputs || !assetAllocation) {
+  if (!inputs || !outputs || !assetAllocations) {
     return {
       inputs: null,
       outputs: null,
-      assetAllocations: null,
+      assetAllocations: null
     }
   }
   return {
     inputs: inputs,
     outputs: outputs,
-    assetAllocations: assetAllocations,
+    assetAllocations: assetAllocations
   }
 }
 

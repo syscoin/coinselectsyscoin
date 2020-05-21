@@ -14,7 +14,7 @@ fixtures.forEach(function (f) {
 
     t.same(actual, f.expected)
     if (actual.inputs) {
-      var inputs = []
+      inputs = []
       var feedback = coinselect.coinSelect(actual.inputs, inputs, actual.outputs, f.feeRate)
       t.same(feedback, f.expected)
     }

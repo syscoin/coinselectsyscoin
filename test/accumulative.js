@@ -17,7 +17,7 @@ fixtures.forEach(function (f) {
     else t.ok(actual.fee === f.expected.fee)
 
     if (actual.inputs) {
-      var inputs = []
+      inputs = []
       var feedback = accumulative.accumulative(actual.inputs, inputs, actual.outputs, f.feeRate)
       t.same(feedback.inputs, f.expected.inputs)
       t.same(feedback.outputs, f.expected.outputs)
