@@ -57,7 +57,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ address: output.address, assetInfo: {assetGuid: assetGuid, value: output.value}, type: 'BECH32', value: dustAmount })
+      outputs.push({ address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, type: 'BECH32', value: dustAmount })
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
