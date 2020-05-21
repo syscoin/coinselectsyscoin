@@ -3,7 +3,7 @@ var ext = require('./bn-extensions')
 
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
-module.exports = function blackjack (utxos, inputs, outputs, feeRate) {
+function blackjack (utxos, inputs, outputs, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
 
   var bytesAccum = utils.transactionBytes(inputs, outputs)
@@ -38,7 +38,7 @@ module.exports = function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
+function blackjackAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({}, feeRate)
   const mapAssetAmounts = []
   const inputs = []
@@ -78,4 +78,9 @@ module.exports = function blackjackAsset (utxos, assetArray, feeRate, isNonAsset
     }
   })
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
+}
+
+module.exports = {
+  blackjack: blackjack,
+  blackjackAsset: blackjackAsset
 }

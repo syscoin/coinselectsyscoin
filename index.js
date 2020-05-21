@@ -8,7 +8,7 @@ function utxoScore (x, feeRate) {
   return ext.sub(x.value, ext.mul(feeRate, utils.inputBytes(x)))
 }
 
-module.exports = function coinSelect (utxos, inputs, outputs, feeRate) {
+function coinSelect (utxos, inputs, outputs, feeRate) {
   let utxoSys = utxos.filter(utxo => !utxo.assetInfo)
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
@@ -22,7 +22,7 @@ module.exports = function coinSelect (utxos, inputs, outputs, feeRate) {
   return accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
 }
 
-module.exports = function coinSelectAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
+function coinSelectAsset (utxos, assetArray, feeRate, isNonAssetFunded) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo != null)
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjackAsset(utxoAssets, assetArray, feeRate, isNonAssetFunded)
@@ -30,4 +30,9 @@ module.exports = function coinSelectAsset (utxos, assetArray, feeRate, isNonAsse
 
   // else, try the accumulative strategy
   return accumulative.accumulativeAsset(utxoAssets, assetArray, feeRate, isNonAssetFunded)
+}
+
+module.exports = {
+  coinSelect: coinSelect,
+  coinSelectAsset: coinSelectAsset
 }

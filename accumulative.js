@@ -3,7 +3,7 @@ var ext = require('./bn-extensions')
 
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-module.exports = function accumulative (utxos, inputs, outputs, feeRate) {
+function accumulative (utxos, inputs, outputs, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
   var bytesAccum = utils.transactionBytes(inputs, outputs)
   var inAccum = utils.sumOrNaN(inputs)
@@ -43,7 +43,7 @@ module.exports = function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
+function accumulativeAsset (utxoAssets, assetArray, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({}, feeRate)
   const assetAllocations = []
   const outputs = []
@@ -100,4 +100,9 @@ module.exports = function accumulativeAsset (utxoAssets, assetArray, feeRate, is
     }
   })
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
+}
+
+module.exports = {
+  accumulative: accumulative,
+  accumulativeAsset: accumulativeAsset
 }
