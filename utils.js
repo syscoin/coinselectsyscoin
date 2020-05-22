@@ -29,7 +29,7 @@ function outputBytes (output) {
 
 function dustThreshold (output, feeRate) {
   /* ... classify the output for input estimate  */
-  return ext.mul(inputBytes({}), feeRate)
+  return ext.mul(inputBytes(output), feeRate)
 }
 
 function transactionBytes (inputs, outputs) {

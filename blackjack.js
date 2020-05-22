@@ -39,7 +39,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 
 // average-case: O(n*log(n))
 function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
-  const dustAmount = utils.dustThreshold({}, feeRate)
+  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const mapAssetAmounts = []
   const inputs = []
   const outputs = []
@@ -54,7 +54,7 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
 
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
     let assetAllocation = assetAllocations[assetGuid]
-    if (assetAllocation.length === 0) {
+    if (!assetAllocation || assetAllocation.length === 0) {
       assetAllocation = []
     }
 
