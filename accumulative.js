@@ -82,7 +82,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
       if (ext.gt(inAccum, assetOutAccum)) {
         const changeAsset = ext.sub(inAccum, assetOutAccum)
         // add output as dust amount (smallest possible sys output)
-        const output = { type: 'BECH32', assetInfo: utxo.assetInfo, value: dustAmount }
+        const output = { type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
         // but asset commitment will have the full asset change value
         assetAllocation.push({ n: outputs.length, value: changeAsset })
         outputs.push(output)
