@@ -40,23 +40,23 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 // average-case: O(n*log(n))
 function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
-  const mapAssetAmounts = []
+  const mapAssetAmounts = new Map()
   const inputs = []
   const outputs = []
-  const assetAllocations = []
+  const assetAllocations = new Map()
   for (var i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     if (!input.assetInfo) {
       continue
     }
-    mapAssetAmounts[String(input.assetInfo.assetGuid) + '-' + input.assetInfo.value.toString(10)] = i
+    mapAssetAmounts.set(String(input.assetInfo.assetGuid) + '-' + input.assetInfo.value.toString(10), i)
   }
 
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    let assetAllocation = assetAllocations[assetGuid]
-    if (!assetAllocation || assetAllocation.length === 0) {
-      assetAllocation = []
+    if (!assetAllocations.has(assetGuid)) {
+      assetAllocations.set(assetGuid, [])
     }
+    const assetAllocation = assetAllocations.get(assetGuid)
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
@@ -69,7 +69,7 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
     }
 
     const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
-    var index = mapAssetAmounts[String(assetGuid) + '-' + assetOutAccum.toString(10)]
+    const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {
       inputs.push(utxos[index])

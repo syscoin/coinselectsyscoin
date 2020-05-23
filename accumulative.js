@@ -45,15 +45,15 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 // worst-case: O(n)
 function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
-  const assetAllocations = []
+  const assetAllocations = new Map()
   const outputs = []
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    let assetAllocation = assetAllocations[assetGuid]
-    if (!assetAllocation || assetAllocation.length === 0) {
-      assetAllocation = []
+    if (!assetAllocations.has(assetGuid)) {
+      assetAllocations.set(assetGuid, [])
     }
+    const assetAllocation = assetAllocations.get(assetGuid)
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
