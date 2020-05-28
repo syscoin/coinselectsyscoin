@@ -22,7 +22,7 @@ function inputBytes (input) {
 
 function outputBytes (output) {
   if (output.script) {
-    return output.script.length
+    return new BN(output.script.length)
   }
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
