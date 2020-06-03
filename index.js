@@ -24,14 +24,14 @@ function coinSelect (utxos, inputs, outputs, feeRate) {
   return accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
 }
 
-function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
+function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo != null)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded)
+  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset)
   if (base.inputs) return base
 
   // else, try the accumulative strategy
-  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded)
+  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset)
 }
 
 module.exports = {

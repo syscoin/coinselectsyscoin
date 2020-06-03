@@ -38,7 +38,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
+function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const mapAssetAmounts = new Map()
   const inputs = []
@@ -67,8 +67,8 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded) {
     if (isNonAssetFunded) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
-
-    const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
+    const assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {

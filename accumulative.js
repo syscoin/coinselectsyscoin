@@ -43,7 +43,7 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const assetAllocations = new Map()
   const outputs = []
@@ -65,7 +65,8 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
-    const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
+    const assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     // order by descending asset amounts for this asset guid
     let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
     utxoAsset = utxoAsset.concat().sort(function (a, b) {
@@ -76,6 +77,14 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded) {
     for (var i = 0; i < utxoAsset.length; i++) {
       const utxo = utxoAsset[i]
       const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
+      // asset new/update/send should be funded by 0 value input
+      if (isAsset && !utxoValue.isZero()) {
+        continue
+      }
+      // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only
+      if (!isAsset && utxoValue.isZero()) {
+        continue
+      }
       inAccum = ext.add(inAccum, utxoValue)
       inputs.push(utxo)
       // deal with change
