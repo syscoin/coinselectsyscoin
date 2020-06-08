@@ -71,7 +71,7 @@ function finalize (inputs, outputs, feeRate) {
 
   // is it worth a change output?
   if (ext.gt(remainderAfterExtraOutput, dustThreshold({}, feeRate))) {
-    outputs = outputs.concat({ value: remainderAfterExtraOutput })
+    outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }
 
   var fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs))

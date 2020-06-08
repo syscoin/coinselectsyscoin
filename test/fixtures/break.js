@@ -53,6 +53,7 @@ module.exports = [{
       value: new BN(8000)
     },
     {
+      changeIndex: 1,
       value: new BN(1740)
     }
     ],
@@ -174,6 +175,7 @@ module.exports = [{
       value: new BN(6000)
     },
     {
+      changeIndex: 2,
       value: new BN(2180)
     }
     ],
@@ -206,6 +208,7 @@ module.exports = [{
       value: new BN(4000)
     },
     {
+      changeIndex: 3,
       value: new BN(3000)
     }
     ],

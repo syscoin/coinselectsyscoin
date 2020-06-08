@@ -38,6 +38,7 @@ module.exports = [{
       value: new BN(100000)
     },
     {
+      changeIndex: 1,
       value: new BN(4871)
     }
     ],
@@ -62,6 +63,7 @@ module.exports = [{
       value: new BN(1)
     },
     {
+      changeIndex: 1,
       value: new BN(4999998869)
     }
     ],
@@ -132,6 +134,7 @@ module.exports = [{
       value: new BN(4700)
     },
     {
+      changeIndex: 1,
       value: new BN(4170)
     }
     ],
@@ -219,6 +222,7 @@ module.exports = [{
       value: new BN(28000)
     },
     {
+      changeIndex: 1,
       value: new BN(2000)
     }
     ],
@@ -337,6 +341,7 @@ module.exports = [{
       value: new BN(1000)
     },
     {
+      changeIndex: 4,
       value: new BN(1981)
     }
     ],
@@ -391,6 +396,7 @@ module.exports = [{
       value: new BN(1000)
     },
     {
+      changeIndex: 2,
       value: new BN(1000)
     }
     ],
@@ -426,6 +432,7 @@ module.exports = [{
       value: new BN(20000)
     }],
     outputs: [{
+      changeIndex: 0,
       value: new BN(18080)
     }],
     fee: new BN(1920)
