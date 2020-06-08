@@ -57,7 +57,8 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ assetIndex: assetAllocation.length - 1, address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      // add change index (assetChangeIndex) only if address is same as changeAddress
+      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.length - 1 : null, address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
@@ -91,7 +92,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
       if (ext.gt(inAccum, assetOutAccum)) {
         const changeAsset = ext.sub(inAccum, assetOutAccum)
         // add output as dust amount (smallest possible sys output)
-        const output = { assetIndex: assetAllocation.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
+        const output = { assetChangeIndex: assetAllocation.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
         // but asset commitment will have the full asset change value
         assetAllocation.push({ n: outputs.length, value: changeAsset })
         outputs.push(output)

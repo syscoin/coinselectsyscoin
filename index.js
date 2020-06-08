@@ -37,5 +37,5 @@ function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
 module.exports = {
   coinSelect: coinSelect,
   coinSelectAsset: coinSelectAsset,
-  utils: utils,
+  utils: utils
 }

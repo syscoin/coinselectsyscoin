@@ -60,7 +60,7 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ assetIndex: assetAllocation.length - 1, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.length - 1 : null, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs

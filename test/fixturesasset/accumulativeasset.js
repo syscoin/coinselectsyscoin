@@ -34,21 +34,21 @@ module.exports = [{
       }],
     outputs: [
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr1',
         type: 'BECH32',
         assetInfo: { assetGuid: 1234, value: new BN(100) },
         value: new BN(690)
       },
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr2',
         type: 'BECH32',
         assetInfo: { assetGuid: 12345, value: new BN(1000) },
         value: new BN(690)
       },
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr3',
         type: 'BECH32',
         assetInfo: { assetGuid: 12346, value: new BN(10000) },
@@ -109,14 +109,14 @@ module.exports = [{
       }],
     outputs: [
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr1',
         type: 'BECH32',
         assetInfo: { assetGuid: 1234, value: new BN(100) },
         value: new BN(690)
       },
       {
-        assetIndex: 1,
+        assetChangeIndex: null,
         address: 'addr1a',
         type: 'BECH32',
         assetInfo: { assetGuid: 1234, value: new BN(50) },
@@ -124,27 +124,27 @@ module.exports = [{
       },
       // changeAddr1
       {
-        assetIndex: 2,
+        assetChangeIndex: 2,
         type: 'BECH32',
         assetInfo: { assetGuid: 1234, value: new BN(10) },
         value: new BN(690)
       },
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr2',
         type: 'BECH32',
         assetInfo: { assetGuid: 12345, value: new BN(1000) },
         value: new BN(690)
       },
       {
-        assetIndex: 1,
+        assetChangeIndex: null,
         address: 'addr2a',
         type: 'BECH32',
         assetInfo: { assetGuid: 12345, value: new BN(100) },
         value: new BN(690)
       },
       {
-        assetIndex: 2,
+        assetChangeIndex: null,
         address: 'addr2b',
         type: 'BECH32',
         assetInfo: { assetGuid: 12345, value: new BN(10) },
@@ -152,20 +152,20 @@ module.exports = [{
       },
       // changeAddr2
       {
-        assetIndex: 3,
+        assetChangeIndex: 3,
         type: 'BECH32',
         assetInfo: { assetGuid: 12345, value: new BN(890) },
         value: new BN(690)
       },
       {
-        assetIndex: 0,
+        assetChangeIndex: null,
         address: 'addr3',
         type: 'BECH32',
         assetInfo: { assetGuid: 12346, value: new BN(10000) },
         value: new BN(690)
       },
       {
-        assetIndex: 1,
+        assetChangeIndex: null,
         address: 'addr3a',
         type: 'BECH32',
         assetInfo: { assetGuid: 12346, value: new BN(100000) },
