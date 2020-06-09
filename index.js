@@ -25,7 +25,7 @@ function coinSelect (utxos, inputs, outputs, feeRate) {
 }
 
 function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
-  const utxoAssets = utxos.filter(utxo => utxo.assetInfo != null)
+  const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset)
   if (base.inputs) return base
@@ -46,7 +46,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       }
       var assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid)
       assetAllocationValueIn = ext.add(assetAllocationValueIn, input.assetInfo.value)
-      mapAssetsOut.set(input.assetInfo.assetGuid, assetAllocationValueIn)
+      mapAssetsIn.set(input.assetInfo.assetGuid, assetAllocationValueIn)
     }
   })
   outputs.forEach(output => {
@@ -64,17 +64,17 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
     if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
       const valueDiff = ext.sub(valueAssetIn, valueAssetOut)
-      if (ext.lt(valueDiff, ext.BN_ZERO)) {
-        console.log('addAssetChangeFromGas: asset output cannot be larger than input. Output: ' + valueAssetOut.toNumber() + ' Input: ' + valueAssetIn.toNumber())
+      if (valueDiff.isNeg()) {
+        console.log('addAssetChangeFromGas: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn)
         return null
-      } else if (ext.eq(valueDiff, ext.BN_ZERO)) {
+      } else if (valueDiff.isZero()) {
         continue
-      } 
+      }
       if (!assetAllocations.has(assetGuid)) {
         console.log('addAssetChangeFromGas: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
-      const assetChangeOutputs = outputs.filter(output => output.assetInfo !== null && output.assetInfo.assetGuid === assetGuid && output.assetChangeIndex !== undefined)
+      const assetChangeOutputs = outputs.filter(output => (output.assetInfo !== undefined && output.assetInfo.assetGuid === assetGuid && output.assetChangeIndex !== undefined))
       // if change output already exists just set new value otherwise create new output and allocation
       if (assetChangeOutputs.length > 0) {
         const assetChangeOutput = assetChangeOutputs[0]
@@ -103,7 +103,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
 }
 
 function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate) {
-  let utxoSys = utxos.filter(utxo => utxo.assetInfo !== null)
+  let utxoSys = utxos.filter(utxo => utxo.assetInfo !== undefined)
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
