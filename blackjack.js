@@ -10,12 +10,11 @@ function blackjack (utxos, inputs, outputs, feeRate) {
   var inAccum = utils.sumOrNaN(inputs)
   var outAccum = utils.sumOrNaN(outputs)
   var fee = ext.mul(feeRate, bytesAccum)
-
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate)
 
   var threshold = utils.dustThreshold({}, feeRate)
-
+  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   for (var i = 0; i < utxos.length; i++) {
     var input = utxos[i]
     var inputBytes = utils.inputBytes(input)
@@ -28,6 +27,15 @@ function blackjack (utxos, inputs, outputs, feeRate) {
     bytesAccum = ext.add(bytesAccum, inputBytes)
     inAccum = ext.add(inAccum, inputValue)
     inputs.push(input)
+    // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
+    if (input.assetInfo) {
+      outAccum = ext.add(outAccum, dustAmount)
+      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      // add another bech32 output for OP_RETURN overhead
+      // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
+      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      fee = ext.mul(feeRate, bytesAccum)
+    }
 
     // go again?
     if (ext.lt(inAccum, ext.add(outAccum, fee))) continue
@@ -39,6 +47,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 
 // average-case: O(n*log(n))
 function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
+  if (!utils.uintOrNull(feeRate)) return {}
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const mapAssetAmounts = new Map()
   const inputs = []

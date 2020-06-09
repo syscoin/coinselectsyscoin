@@ -9,7 +9,7 @@ function accumulative (utxos, inputs, outputs, feeRate) {
   var inAccum = utils.sumOrNaN(inputs)
   var outAccum = utils.sumOrNaN(outputs)
   var fee = ext.mul(feeRate, bytesAccum)
-
+  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate)
 
@@ -30,7 +30,14 @@ function accumulative (utxos, inputs, outputs, feeRate) {
     bytesAccum = ext.add(bytesAccum, utxoBytes)
     inAccum = ext.add(inAccum, utxoValue)
     inputs.push(utxo)
-
+    // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
+    if (utxo.assetInfo) {
+      outAccum = ext.add(outAccum, dustAmount)
+      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      // add another bech32 output for OP_RETURN overhead
+      // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
+      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+    }
     fee = ext.mul(feeRate, bytesAccum)
 
     // go again?
@@ -44,6 +51,7 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 
 // worst-case: O(n)
 function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset) {
+  if (!utils.uintOrNull(feeRate)) return {}
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const assetAllocations = new Map()
   const outputs = []
@@ -58,8 +66,8 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
-        // add change index (assetChangeIndex) only if address is same as changeAddress
-        outputs.push({ assetChangeIndex: assetAllocation.length - 1, address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        // add change index
+        outputs.push({ assetChangeIndex: assetAllocation.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       } else {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
