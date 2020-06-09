@@ -57,8 +57,12 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.push({ n: outputs.length, value: output.value })
-      // add change index (assetChangeIndex) only if address is same as changeAddress
-      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.length - 1 : null, address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      if (output.address === valueAssetObj.changeAddress) {
+        // add change index (assetChangeIndex) only if address is same as changeAddress
+        outputs.push({ assetChangeIndex: assetAllocation.length - 1, address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      } else {
+        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      }
     })
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
