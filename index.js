@@ -49,16 +49,18 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       mapAssetsIn.set(input.assetInfo.assetGuid, assetAllocationValueIn)
     }
   })
-  outputs.forEach(output => {
-    if (output.assetInfo) {
-      if (!mapAssetsOut.has(output.assetInfo.assetGuid)) {
-        mapAssetsOut.set(output.assetInfo.assetGuid, ext.BN_ZERO)
+  // get total output value from assetAllocations, not from outputs because outputs may have removed some outputs and redirected allocations to other outputs (ie burn sys to ethereum)
+  for (const [assetGuid, allocations] of assetAllocations.entries()) {
+    allocations.forEach(output => {
+      if (!mapAssetsOut.has(assetGuid)) {
+        mapAssetsOut.set(assetGuid, ext.BN_ZERO)
       }
-      var assetAllocationValueOut = mapAssetsOut.get(output.assetInfo.assetGuid)
-      assetAllocationValueOut = ext.add(assetAllocationValueOut, output.assetInfo.value)
-      mapAssetsOut.set(output.assetInfo.assetGuid, assetAllocationValueOut)
-    }
-  })
+      var assetAllocationValueOut = mapAssetsOut.get(assetGuid)
+      assetAllocationValueOut = ext.add(assetAllocationValueOut, output.value)
+      mapAssetsOut.set(assetGuid, assetAllocationValueOut)
+    })
+  }
+
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
@@ -78,9 +80,9 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       // if change output already exists just set new value otherwise create new output and allocation
       if (assetChangeOutputs.length > 0) {
         const assetChangeOutput = assetChangeOutputs[0]
-        assetChangeOutput.assetInfo.value = valueDiff
+        assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
         const assetAllocation = assetAllocations.get(assetGuid)
-        assetAllocation[assetChangeOutput.assetChangeIndex].value = valueDiff
+        assetAllocation[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation[assetChangeOutput.assetChangeIndex].value, valueDiff)
       } else {
         const assetAllocation = assetAllocations.get(assetGuid)
         assetAllocation.push({ n: outputs.length, value: valueDiff })
