@@ -123,8 +123,10 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate) 
   inputs = inputsCopy
   // else, try the accumulative strategy
   const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
-  if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate)) {
-    return {}
+  if (res.inputs) {
+    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate)) {
+      return {}
+    }
   }
   return res
 }
