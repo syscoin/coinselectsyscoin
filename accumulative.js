@@ -1,18 +1,19 @@
 var utils = require('./utils')
 var ext = require('./bn-extensions')
-
+var BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
 function accumulative (utxos, inputs, outputs, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
+  var changeOutputBytes = utils.outputBytes({})
+  var feeBytes = new BN(changeOutputBytes)
   var bytesAccum = utils.transactionBytes(inputs, outputs)
   var inAccum = utils.sumOrNaN(inputs)
   var outAccum = utils.sumOrNaN(outputs)
   var fee = ext.mul(feeRate, bytesAccum)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   // is already enough input?
-  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate)
-
+  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
   for (var i = 0; i < utxos.length; i++) {
     var utxo = utxos[i]
     var utxoBytes = utils.inputBytes(utxo)
@@ -33,17 +34,17 @@ function accumulative (utxos, inputs, outputs, feeRate) {
     // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
     if (utxo.assetInfo) {
       outAccum = ext.add(outAccum, dustAmount)
-      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+      feeBytes = ext.add(feeBytes, changeOutputBytes)
       // add another bech32 output for OP_RETURN overhead
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
-      bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+      feeBytes = ext.add(feeBytes, changeOutputBytes)
     }
     fee = ext.mul(feeRate, bytesAccum)
-
     // go again?
     if (ext.lt(inAccum, ext.add(outAccum, fee))) continue
-
-    return utils.finalize(inputs, outputs, feeRate)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 
   return { fee: ext.mul(feeRate, bytesAccum) }

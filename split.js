@@ -5,7 +5,7 @@ var ext = require('./bn-extensions')
 // split utxos between each output, ignores outputs with .value defined
 module.exports = function split (utxos, outputs, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
-
+  var changeOutputBytes = utils.outputBytes({})
   var bytesAccum = utils.transactionBytes(utxos, outputs)
   var fee = ext.mul(feeRate, bytesAccum)
   if (outputs.length === 0) return { fee: fee }
@@ -19,7 +19,7 @@ module.exports = function split (utxos, outputs, feeRate) {
     return a + !x.value
   }, 0)
 
-  if (ext.isZero(remaining) && unspecified === 0) return utils.finalize(utxos, outputs, feeRate)
+  if (ext.isZero(remaining) && unspecified === 0) return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
 
   // Counts the number of split outputs left
   var splitOutputsCount = new BN(outputs.reduce(function (a, x) {
@@ -45,5 +45,5 @@ module.exports = function split (utxos, outputs, feeRate) {
     return y
   })
 
-  return utils.finalize(utxos, outputs, feeRate)
+  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
 }

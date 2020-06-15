@@ -62,11 +62,9 @@ function sumOrNaN (range) {
   }, ext.BN_ZERO)
 }
 
-var BLANK_OUTPUT = outputBytes({})
-
-function finalize (inputs, outputs, feeRate) {
+function finalize (inputs, outputs, feeRate, feeBytes) {
   var bytesAccum = transactionBytes(inputs, outputs)
-  var feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, BLANK_OUTPUT))
+  var feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
   var remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs), feeAfterExtraOutput))
 
   // is it worth a change output?

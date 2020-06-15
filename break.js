@@ -4,7 +4,7 @@ var ext = require('./bn-extensions')
 // break utxos into the maximum number of 'output' possible
 module.exports = function broken (utxos, output, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
-
+  var changeOutputBytes = utils.outputBytes({})
   var bytesAccum = utils.transactionBytes(utxos, [])
   var value = utils.uintOrNull(output.value)
   var inAccum = utils.sumOrNaN(utxos)
@@ -30,5 +30,5 @@ module.exports = function broken (utxos, output, feeRate) {
     outputs.push(output)
   }
 
-  return utils.finalize(utxos, outputs, feeRate)
+  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
 }

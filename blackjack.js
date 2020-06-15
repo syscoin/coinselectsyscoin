@@ -5,13 +5,13 @@ var ext = require('./bn-extensions')
 // worst-case: O(n)
 function blackjack (utxos, inputs, outputs, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
-
+  var changeOutputBytes = utils.outputBytes({})
   var bytesAccum = utils.transactionBytes(inputs, outputs)
   var inAccum = utils.sumOrNaN(inputs)
   var outAccum = utils.sumOrNaN(outputs)
   var fee = ext.mul(feeRate, bytesAccum)
   // is already enough input?
-  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate)
+  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
 
   var threshold = utils.dustThreshold({}, feeRate)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
@@ -40,7 +40,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
     // go again?
     if (ext.lt(inAccum, ext.add(outAccum, fee))) continue
 
-    return utils.finalize(inputs, outputs, feeRate)
+    return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
   }
   return { fee: ext.mul(feeRate, bytesAccum) }
 }
