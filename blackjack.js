@@ -52,7 +52,7 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
   const mapAssetAmounts = new Map()
   const inputs = []
   const outputs = []
-  const assetAllocations = new Map()
+  const assetAllocations = []
   for (var i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     if (!input.assetInfo) {
@@ -62,16 +62,13 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
   }
 
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    if (!assetAllocations.has(assetGuid)) {
-      assetAllocations.set(assetGuid, [])
-    }
-    const assetAllocation = assetAllocations.get(assetGuid)
-
+    // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
+    const assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.alloc(65, 0)};
     valueAssetObj.outputs.forEach(output => {
-      assetAllocation.push({ n: outputs.length, value: output.value })
-      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.length - 1 : null, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      assetAllocation.values.push({ n: outputs.length, value: output.value })
+      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.values.length - 1 : null, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
     })
-
+    assetAllocations.push(assetAllocation)
     // if not expecting asset to be funded, we just want outputs then return here without inputs
     if (isNonAssetFunded) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)

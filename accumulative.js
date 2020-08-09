@@ -54,21 +54,18 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset) {
   if (!utils.uintOrNull(feeRate)) return {}
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
-  const assetAllocations = new Map()
+  const assetAllocations = []
   const outputs = []
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    if (!assetAllocations.has(assetGuid)) {
-      assetAllocations.set(assetGuid, [])
-    }
-    const assetAllocation = assetAllocations.get(assetGuid)
-
+     // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
+    let assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.alloc(65, 0)};
     valueAssetObj.outputs.forEach(output => {
-      assetAllocation.push({ n: outputs.length, value: output.value })
+      assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
         // add change index
-        outputs.push({ assetChangeIndex: assetAllocation.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       } else {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
@@ -76,6 +73,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
 
     // if not expecting asset to be funded, we just want outputs then return here without inputs
     if (isNonAssetFunded) {
+      assetAllocations.push(assetAllocation)
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
@@ -105,9 +103,9 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
       if (ext.gt(inAccum, assetOutAccum)) {
         const changeAsset = ext.sub(inAccum, assetOutAccum)
         // add output as dust amount (smallest possible sys output)
-        const output = { assetChangeIndex: assetAllocation.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
+        const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
         // but asset commitment will have the full asset change value
-        assetAllocation.push({ n: outputs.length, value: changeAsset })
+        assetAllocation.values.push({ n: outputs.length, value: changeAsset })
         outputs.push(output)
         funded = true
         break
@@ -117,6 +115,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
         break
       }
     }
+    assetAllocations.push(assetAllocation)
     // shortcut when we know an asset spend is not funded
     if (!funded) {
       return utils.finalizeAssets(null, null, null, null, null)

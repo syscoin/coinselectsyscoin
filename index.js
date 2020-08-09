@@ -50,18 +50,19 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
     }
   })
   // get total output value from assetAllocations, not from outputs because outputs may have removed some outputs and redirected allocations to other outputs (ie burn sys to ethereum)
-  for (const [assetGuid, allocations] of assetAllocations.entries()) {
-    allocations.forEach(output => {
-      if (!mapAssetsOut.has(assetGuid)) {
-        mapAssetsOut.set(assetGuid, ext.BN_ZERO)
+  assetAllocations.forEach(voutAsset => {
+    voutAsset.values.forEach(output => {
+      if (!mapAssetsOut.has(voutAsset.assetGuid)) {
+        mapAssetsOut.set(voutAsset.assetGuid, ext.BN_ZERO)
       }
-      var assetAllocationValueOut = mapAssetsOut.get(assetGuid)
+      var assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid)
       assetAllocationValueOut = ext.add(assetAllocationValueOut, output.value)
-      mapAssetsOut.set(assetGuid, assetAllocationValueOut)
+      mapAssetsOut.set(voutAsset.assetGuid, assetAllocationValueOut)
     })
-  }
+  })
 
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
+    let assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
@@ -72,7 +73,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       } else if (valueDiff.isZero()) {
         continue
       }
-      if (!assetAllocations.has(assetGuid)) {
+      if (assetAllocation === undefined) {
         console.log('addAssetChangeFromGas: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
@@ -81,24 +82,23 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       if (assetChangeOutputs.length > 0) {
         const assetChangeOutput = assetChangeOutputs[0]
         assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
-        const assetAllocation = assetAllocations.get(assetGuid)
-        assetAllocation[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation[assetChangeOutput.assetChangeIndex].value, valueDiff)
+        assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation[assetChangeOutput.assetChangeIndex].value, valueDiff)
       } else {
-        const assetAllocation = assetAllocations.get(assetGuid)
-        assetAllocation.push({ n: outputs.length, value: valueDiff })
-        outputs.push({ assetChangeIndex: assetAllocation.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+        assetAllocation.values.push({ n: outputs.length, value: valueDiff })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       }
     // asset does not exist in output, create it
     } else {
-      const valueDiff = valueAssetIn
-      if (assetAllocations.has(assetGuid)) {
+      if (assetAllocation !== undefined) {
         console.log('addAssetChangeFromGas: inconsistency related to outputs with NO asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
-      assetAllocations.set(assetGuid, [])
-      const assetAllocation = assetAllocations.get(assetGuid)
-      assetAllocation.push({ n: outputs.length, value: valueDiff })
-      outputs.push({ assetChangeIndex: assetAllocation.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      const valueDiff = valueAssetIn
+      // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
+      assetAllocation.notarysig = Buffer.alloc(65, 0);
+      assetAllocation.values = []
+      assetAllocation.values.push({ n: outputs.length, value: valueDiff })
+      outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
     }
   }
   return 1
