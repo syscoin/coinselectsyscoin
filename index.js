@@ -82,7 +82,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       if (assetChangeOutputs.length > 0) {
         const assetChangeOutput = assetChangeOutputs[0]
         assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
-        assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation[assetChangeOutput.assetChangeIndex].value, valueDiff)
+        assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
       } else {
         assetAllocation.values.push({ n: outputs.length, value: valueDiff })
         outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
