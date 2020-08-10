@@ -95,10 +95,9 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
       }
       const valueDiff = valueAssetIn
       // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
-      assetAllocation.notarysig = Buffer.alloc(65, 0);
-      assetAllocation.values = []
-      assetAllocation.values.push({ n: outputs.length, value: valueDiff })
-      outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      let allocation = {assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.alloc(65, 0)}
+      outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      assetAllocations.push(allocation)
     }
   }
   return 1
