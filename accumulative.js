@@ -59,14 +59,14 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    let utxoAssetObj = assets.get(assetGuid)
-    if(utxoAssetObj === undefined) {
+    const utxoAssetObj = assets ? assets.get(assetGuid) : {}
+    if (utxoAssetObj === undefined) {
       continue
     }
-    let assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.from('')};
+    const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: Buffer.from('') }
     // if notary is set in the asset object pre-fill 65 bytes
-    if(utxoAssetObj.requireNotarization) {
-      assetAllocation.notarysig = Buffer.alloc(65,0)
+    if (utxoAssetObj.requireNotarization) {
+      assetAllocation.notarysig = Buffer.alloc(65, 0)
     }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })

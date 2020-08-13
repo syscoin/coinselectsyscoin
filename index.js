@@ -62,7 +62,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, a
   })
 
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
-    let assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
+    const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
@@ -94,14 +94,14 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, a
         return null
       }
       const valueDiff = valueAssetIn
-      let utxoAssetObj = assets.get(assetGuid)
-      if(utxoAssetObj === undefined) {
+      const utxoAssetObj = assets ? assets.get(assetGuid) : {}
+      if (utxoAssetObj === undefined) {
         continue
       }
-      let allocation = {assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.from('')}
+      const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.from('') }
       // if notary is set in the asset object pre-fill 65 bytes
-      if(utxoAssetObj.requireNotarization) {
-        allocation.notarysig = Buffer.alloc(65,0)
+      if (utxoAssetObj.requireNotarization) {
+        allocation.notarysig = Buffer.alloc(65, 0)
       }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
