@@ -51,7 +51,7 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const assetAllocations = []
@@ -59,8 +59,15 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-     // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
-    let assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.alloc(65, 0)};
+    let utxoAssetObj = assets.get(assetGuid)
+    if(utxoAssetObj === undefined) {
+      continue
+    }
+    let assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.from('')};
+    // if notary is set in the asset object pre-fill 65 bytes
+    if(utxoAssetObj.requireNotarization) {
+      assetAllocation.notarysig = Buffer.alloc(65,0)
+    }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {

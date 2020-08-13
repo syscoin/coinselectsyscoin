@@ -24,18 +24,18 @@ function coinSelect (utxos, inputs, outputs, feeRate) {
   return accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
 }
 
-function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
+function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset)
+  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets)
   if (base.inputs) return base
 
   // else, try the accumulative strategy
-  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset)
+  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets)
 }
 // create map of assets on inputs and outputs, compares the two and adds to outputs if any are not accounted for on inputs
 // the goal is to either have new outputs created to match inputs or to update output change values to match input for each asset spent in transaction
-function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
+function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, assets) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   var mapAssetsIn = new Map()
   var mapAssetsOut = new Map()
@@ -94,8 +94,15 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
         return null
       }
       const valueDiff = valueAssetIn
-      // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
-      let allocation = {assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.alloc(65, 0)}
+      let utxoAssetObj = assets.get(assetGuid)
+      if(utxoAssetObj === undefined) {
+        continue
+      }
+      let allocation = {assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.from('')}
+      // if notary is set in the asset object pre-fill 65 bytes
+      if(utxoAssetObj.requireNotarization) {
+        allocation.notarysig = Buffer.alloc(65,0)
+      }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
     }
@@ -103,7 +110,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate) {
   return 1
 }
 
-function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate) {
+function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, assets) {
   // select asset outputs and de-duplicate inputs already selected
   let utxoSys = utxos.filter(utxo => utxo.assetInfo !== undefined && !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.concat().sort(function (a, b) {
@@ -113,7 +120,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate) 
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate)
   if (base.inputs) {
-    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate)) {
+    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, assets)) {
       return {}
     }
     return base
@@ -124,7 +131,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate) 
   // else, try the accumulative strategy
   const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
   if (res.inputs) {
-    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate)) {
+    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, assets)) {
       return {}
     }
   }

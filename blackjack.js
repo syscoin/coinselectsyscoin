@@ -46,7 +46,7 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
+function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const mapAssetAmounts = new Map()
@@ -62,8 +62,15 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset) {
   }
 
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    // always fill in with 65 byte empty signature, should be optimized out by caller if notary not needed
-    const assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.alloc(65, 0)};
+    let utxoAssetObj = assets.get(assetGuid)
+    if(utxoAssetObj === undefined) {
+      continue
+    }
+    let assetAllocation = {assetGuid: assetGuid, values: [], notarysig: Buffer.from('')};
+    // if notary is set in the asset object pre-fill 65 bytes
+    if(utxoAssetObj.requireNotarization) {
+      assetAllocation.notarysig = Buffer.alloc(65,0)
+    }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.values.length - 1 : null, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
