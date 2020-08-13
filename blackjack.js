@@ -68,7 +68,7 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, as
     }
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: Buffer.from('') }
     // if notary is set in the asset object pre-fill 65 bytes
-    if (utxoAssetObj.requireNotarization) {
+    if (utxoAssetObj.notarizationEndPoint && utxoAssetObj.notarizationEndPoint.length > 0) {
       assetAllocation.notarysig = Buffer.alloc(65, 0)
     }
     valueAssetObj.outputs.forEach(output => {

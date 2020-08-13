@@ -1,6 +1,6 @@
 {
   "name": "coinselectsyscoin",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "A transaction input selection module for syscoin.",
   "keywords": [
     "coinselect",
@@ -50,6 +50,6 @@
     "tape": "^4.5.1"
   },
   "dependencies": {
-    "bn.js": "^5.1.1"
+    "bn.js": "^5.1.2"
   }
 }

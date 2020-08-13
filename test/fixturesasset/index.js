@@ -54,11 +54,11 @@ module.exports = [{
         assetInfo: { assetGuid: 12346, value: new BN(10000) },
         value: new BN(690)
       }],
-    assetAllocations: new Map([
-      [1234, { n: 0, value: new BN(100) }],
-      [12345, { n: 1, value: new BN(1000) }],
-      [12346, { n: 2, value: new BN(10000) }]
-    ])
+    assetAllocations: [
+      { assetGuid: 1234, values: [{ n: 0, value: new BN(100) }], notarysig: Buffer.from('') },
+      { assetGuid: 12345, values: [{ n: 1, value: new BN(1000) }], notarysig: Buffer.from('') },
+      { assetGuid: 12346, values: [{ n: 2, value: new BN(10000) }], notarysig: Buffer.from('') }
+    ]
   }
 },
 {
@@ -176,17 +176,11 @@ module.exports = [{
         assetInfo: { assetGuid: 12346, value: new BN(100000) },
         value: new BN(690)
       }],
-    assetAllocations: new Map([
-      [1234, { n: 0, value: new BN(100) }],
-      [1234, { n: 1, value: new BN(50) }],
-      [1234, { n: 2, value: new BN(10) }],
-      [12345, { n: 3, value: new BN(1000) }],
-      [12345, { n: 4, value: new BN(100) }],
-      [12345, { n: 5, value: new BN(10) }],
-      [12345, { n: 6, value: new BN(890) }],
-      [12346, { n: 7, value: new BN(10000) }],
-      [12346, { n: 8, value: new BN(100000) }]
-    ])
+    assetAllocations: [
+      { assetGuid: 1234, values: [{ n: 0, value: new BN(100) }, { n: 1, value: new BN(50) }, { n: 2, value: new BN(10) }], notarysig: Buffer.from('') },
+      { assetGuid: 12345, values: [{ n: 3, value: new BN(1000) }, { n: 4, value: new BN(100) }, { n: 5, value: new BN(10) }, { n: 6, value: new BN(890) }], notarysig: Buffer.from('') },
+      { assetGuid: 12346, values: [{ n: 7, value: new BN(10000) }, { n: 8, value: new BN(100000) }], notarysig: Buffer.from('') }
+    ]
   }
 }
 ]

@@ -100,7 +100,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, a
       }
       const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.from('') }
       // if notary is set in the asset object pre-fill 65 bytes
-      if (utxoAssetObj.requireNotarization) {
+      if (utxoAssetObj.notarizationEndPoint && utxoAssetObj.notarizationEndPoint.length > 0) {
         allocation.notarysig = Buffer.alloc(65, 0)
       }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
