@@ -65,7 +65,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
     }
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: Buffer.from('') }
     // if notary is set in the asset object pre-fill 65 bytes
-    if (utxoAssetObj.notarizationEndPoint && utxoAssetObj.notarizationEndPoint.length > 0) {
+    if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
       assetAllocation.notarysig = Buffer.alloc(65, 0)
     }
     valueAssetObj.outputs.forEach(output => {
