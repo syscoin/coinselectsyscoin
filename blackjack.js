@@ -69,6 +69,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const inputs = []
   const outputs = []
   const assetAllocations = []
+  let auxfeeValue = ext.BN_ZERO
   for (var i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     if (!input.assetInfo) {
@@ -95,7 +96,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         totalAssetValue = ext.add(totalAssetValue, output.value)
       })
       // get auxfee based on auxfee table and total amount sending
-      const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+      auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
       assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
       outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
     }
@@ -109,7 +110,11 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
     // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
-    const assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    // if auxfee exists add total output for asset with auxfee so change is calculated properly
+    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
+      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    }
     const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
     // ensure every target for asset is satisfied otherwise we fail
     if (index) {

@@ -72,6 +72,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
   const assetAllocations = []
   const outputs = []
   const inputs = []
+  let auxfeeValue = ext.BN_ZERO
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
     const utxoAssetObj = assets ? assets.get(assetGuid) : {}
@@ -92,7 +93,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
           totalAssetValue = ext.add(totalAssetValue, output.value)
         })
         // get auxfee based on auxfee table and total amount sending
-        const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+        auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
         assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
         outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
       }
@@ -114,7 +115,11 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
     }
 
     // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
-    const assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    // if auxfee exists add total output for asset with auxfee so change is calculated properly
+    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
+      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    }
     // order by descending asset amounts for this asset guid
     let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
     utxoAsset = utxoAsset.concat().sort(function (a, b) {
