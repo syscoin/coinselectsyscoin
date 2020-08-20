@@ -43,7 +43,7 @@ function accumulative (utxos, inputs, outputs, feeRate, assets) {
       if (assets && assets.has(utxo.assetInfo.assetGuid)) {
         const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
-        if (utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
@@ -85,7 +85,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         assetAllocation.notarysig = Buffer.alloc(65, 0)
       }
       // auxfee is set and its an allocation send
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
         let totalAssetValue = ext.BN_ZERO
         // find total amount for this asset from assetMap
         valueAssetObj.outputs.forEach(output => {
@@ -94,7 +94,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         // get auxfee based on auxfee table and total amount sending
         const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
         assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-        outputs.push({ address: utxoAssetObj.auxfeekeyids, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+        outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
       }
     }
     valueAssetObj.outputs.forEach(output => {

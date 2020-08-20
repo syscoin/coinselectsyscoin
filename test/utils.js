@@ -29,6 +29,6 @@ tape('auxfee', function (t) {
   auxfeedetails.auxfees.push({ bound: 25000 * COIN, percent: 0.007 * scalarPct })
   auxfeedetails.auxfees.push({ bound: 250000 * COIN, percent: 0 })
   const auxfee = utils.getAuxFee(auxfeedetails, 250 * COIN)
-  t.equal(auxfee, 1.06 * COIN)
+  t.same(auxfee, new BN(1.06 * COIN))
   t.end()
 })

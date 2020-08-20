@@ -133,11 +133,11 @@ function getAuxFee (auxfeedetails, nAmount) {
     nBoundAmount = nNextBoundAmount - nBoundAmount
     // must be last bound
     if (nBoundAmount <= 0) {
-      return (nAmount - nNextBoundAmount) * nRate + nAccumulatedFee
+      return new BN((nAmount - nNextBoundAmount) * nRate + nAccumulatedFee)
     }
     nAccumulatedFee += (nBoundAmount * nRate)
   }
-  return (nAmount - nBoundAmount) * nRate + nAccumulatedFee
+  return new BN((nAmount - nBoundAmount) * nRate + nAccumulatedFee)
 }
 module.exports = {
   dustThreshold: dustThreshold,
