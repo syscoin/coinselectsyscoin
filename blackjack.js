@@ -34,8 +34,8 @@ function blackjack (utxos, inputs, outputs, feeRate, assets) {
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
-      if (assets && assets.has(utxo.assetInfo.assetGuid)) {
-        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
+      if (assets && assets.has(input.assetInfo.assetGuid)) {
+        const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
         if (utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
