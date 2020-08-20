@@ -60,6 +60,11 @@ function lt (a, b) {
   return a.lt(b)
 }
 
+function lte (a, b) {
+  if (!BN.isBN(a) || !BN.isBN(b)) return false
+  return a.lte(b)
+}
+
 function gt (a, b) {
   if (!BN.isBN(a) || !BN.isBN(b)) return false
   return a.gt(b)
@@ -109,6 +114,7 @@ module.exports = {
   isZero: isZero,
   eq: eq,
   lt: lt,
+  lte: lte,
   gt: gt,
   gte: gte,
   or: or,

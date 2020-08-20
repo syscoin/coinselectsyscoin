@@ -3,7 +3,7 @@ var ext = require('./bn-extensions')
 var BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate) {
+function accumulative (utxos, inputs, outputs, feeRate, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
   var changeOutputBytes = utils.outputBytes({})
   var feeBytes = new BN(changeOutputBytes)
@@ -40,6 +40,19 @@ function accumulative (utxos, inputs, outputs, feeRate) {
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
+      if (assets && assets.has(utxo.assetInfo.assetGuid)) {
+        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
+        // auxfee for this asset exists add another output
+        if (utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+          outAccum = ext.add(outAccum, dustAmount)
+          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+          feeBytes = ext.add(feeBytes, changeOutputBytes)
+          // add another bech32 output for OP_RETURN overhead
+          // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
+          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+          feeBytes = ext.add(feeBytes, changeOutputBytes)
+        }
+      }
     }
     fee = ext.mul(feeRate, bytesAccum)
     // go again?
@@ -51,8 +64,10 @@ function accumulative (utxos, inputs, outputs, feeRate) {
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
+  const isAsset = utils.isAsset(txVersion)
+  const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const assetAllocations = []
   const outputs = []
@@ -64,9 +79,23 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, isNonAssetFunded, isA
       continue
     }
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: Buffer.from('') }
-    // if notary is set in the asset object pre-fill 65 bytes
-    if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
-      assetAllocation.notarysig = Buffer.alloc(65, 0)
+    if (!isAsset) {
+      // if notary is set in the asset object pre-fill 65 bytes
+      if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
+        assetAllocation.notarysig = Buffer.alloc(65, 0)
+      }
+      // auxfee is set and its an allocation send
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        let totalAssetValue = ext.BN_ZERO
+        // find total amount for this asset from assetMap
+        valueAssetObj.outputs.forEach(output => {
+          totalAssetValue = ext.add(totalAssetValue, output.value)
+        })
+        // get auxfee based on auxfee table and total amount sending
+        const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+        assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
+        outputs.push({ address: utxoAssetObj.auxfeekeyids, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+      }
     }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })

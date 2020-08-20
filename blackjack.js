@@ -1,9 +1,8 @@
 var utils = require('./utils')
 var ext = require('./bn-extensions')
-
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
-function blackjack (utxos, inputs, outputs, feeRate) {
+function blackjack (utxos, inputs, outputs, feeRate, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
   var changeOutputBytes = utils.outputBytes({})
   var bytesAccum = utils.transactionBytes(inputs, outputs)
@@ -35,6 +34,19 @@ function blackjack (utxos, inputs, outputs, feeRate) {
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
+      if (assets && assets.has(utxo.assetInfo.assetGuid)) {
+        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
+        // auxfee for this asset exists add another output
+        if (utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+          outAccum = ext.add(outAccum, dustAmount)
+          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+          feeBytes = ext.add(feeBytes, changeOutputBytes)
+          // add another bech32 output for OP_RETURN overhead
+          // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
+          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+          feeBytes = ext.add(feeBytes, changeOutputBytes)
+        }
+      }
     }
 
     // go again?
@@ -46,8 +58,10 @@ function blackjack (utxos, inputs, outputs, feeRate) {
 }
 
 // average-case: O(n*log(n))
-function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
+function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   if (!utils.uintOrNull(feeRate)) return {}
+  const isAsset = utils.isAsset(txVersion)
+  const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const mapAssetAmounts = new Map()
   const inputs = []
@@ -70,6 +84,18 @@ function blackjackAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, as
     // if notary is set in the asset object pre-fill 65 bytes
     if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
       assetAllocation.notarysig = Buffer.alloc(65, 0)
+    }
+    // auxfee is set and its an allocation send
+    if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+      let totalAssetValue = ext.BN_ZERO
+      // find total amount for this asset from assetMap
+      valueAssetObj.outputs.forEach(output => {
+        totalAssetValue = ext.add(totalAssetValue, output.value)
+      })
+      // get auxfee based on auxfee table and total amount sending
+      const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+      assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
+      outputs.push({ address: utxoAssetObj.auxfeekeyid, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
     }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })

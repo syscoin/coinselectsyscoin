@@ -2,12 +2,12 @@ var accumulative = require('../accumulative')
 var fixtures = require('./fixtures/accumulative')
 var fixturesasset = require('./fixturesasset/accumulativeasset')
 var tape = require('tape')
-var utils = require('./_utils')
+var _utils = require('./_utils')
 
 fixtures.forEach(function (f) {
   tape(f.description, function (t) {
-    var utxos = utils.expand(f.inputs, true)
-    var outputs = utils.expand(f.outputs)
+    var utxos = _utils.expand(f.inputs, true)
+    var outputs = _utils.expand(f.outputs)
     var inputs = []
     var actual = accumulative.accumulative(utxos, inputs, outputs, f.feeRate)
 
@@ -31,15 +31,15 @@ fixtures.forEach(function (f) {
 
 fixturesasset.forEach(function (f) {
   tape(f.description, function (t) {
-    var utxos = utils.expand(f.utxos, true)
+    var utxos = _utils.expand(f.utxos, true)
     const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
-    var actual = accumulative.accumulativeAsset(utxoAssets, f.assetMap, f.feeRate, f.isNonAssetFunded)
+    var actual = accumulative.accumulativeAsset(utxoAssets, f.assetMap, f.feeRate, f.txVersion)
 
     t.same(actual.inputs, f.expected.inputs)
     t.same(actual.outputs, f.expected.outputs)
 
     if (actual.inputs) {
-      var feedback = accumulative.accumulativeAsset(actual.inputs, f.assetMap, f.feeRate, f.isNonAssetFunded)
+      var feedback = accumulative.accumulativeAsset(actual.inputs, f.assetMap, f.feeRate, f.txVersion)
       t.same(feedback.inputs, f.expected.inputs)
       t.same(feedback.outputs, f.expected.outputs)
     }

@@ -1,9 +1,10 @@
 var BN = require('bn.js')
+var utils = require('../utils')
 
 module.exports = [{
   description: '3 asset outputs with different guids, no asset change',
   feeRate: new BN(10),
-  isNonAssetFunded: false,
+  txVersion: utils.SYSCOIN_TX_VERSION_ASSET_SEND,
   assetMap: new Map([
     [1234, { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }] }],
     [12345, { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }] }],
@@ -64,7 +65,7 @@ module.exports = [{
 {
   description: 'multiple asset outputs per asset with multiple change, out of order utxo',
   feeRate: new BN(10),
-  isNonAssetFunded: false,
+  txVersion: utils.SYSCOIN_TX_VERSION_ASSET_SEND,
   assetMap: new Map([
     [1234, { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }, { value: new BN(50), address: 'addr1a' }] }],
     [12345, { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }, { value: new BN(100), address: 'addr2a' }, { value: new BN(10), address: 'addr2b' }] }],

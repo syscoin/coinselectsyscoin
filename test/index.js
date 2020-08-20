@@ -27,11 +27,11 @@ fixturesAsset.forEach(function (f) {
   tape(f.description, function (t) {
     var utxos = utils.expand(f.utxos, true)
     const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
-    var actual = coinselect.coinSelectAsset(utxoAssets, f.assetMap, f.feeRate, f.isNonAssetFunded)
+    var actual = coinselect.coinSelectAsset(utxoAssets, f.assetMap, f.feeRate, f.txVersion)
 
     t.same(actual, f.expected)
     if (actual.inputs) {
-      var feedback = coinselect.coinSelectAsset(actual.inputs, f.assetMap, f.feeRate, f.isNonAssetFunded)
+      var feedback = coinselect.coinSelectAsset(actual.inputs, f.assetMap, f.feeRate, f.txVersion)
       t.same(feedback, f.expected)
     }
 

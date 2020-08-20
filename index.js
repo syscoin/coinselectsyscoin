@@ -8,34 +8,34 @@ function utxoScore (x, feeRate) {
   return ext.sub(x.value, ext.mul(feeRate, utils.inputBytes(x)))
 }
 
-function coinSelect (utxos, inputs, outputs, feeRate) {
+function coinSelect (utxos, inputs, outputs, feeRate, assets) {
   let utxoSys = utxos.filter(utxo => !utxo.assetInfo)
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate)
+  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
   if (base.inputs) return base
   // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
   // instead of accumulate between the two coin selection algorithms
   inputs = inputsCopy
   // else, try the accumulative strategy
-  return accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
+  return accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
 }
 
-function coinSelectAsset (utxos, assetMap, feeRate, isNonAssetFunded, isAsset, assets) {
+function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets)
+  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
   if (base.inputs) return base
 
   // else, try the accumulative strategy
-  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, isNonAssetFunded, isAsset, assets)
+  return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
 }
 // create map of assets on inputs and outputs, compares the two and adds to outputs if any are not accounted for on inputs
 // the goal is to either have new outputs created to match inputs or to update output change values to match input for each asset spent in transaction
-function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, assets) {
+function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, txVersion, assets) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   var mapAssetsIn = new Map()
   var mapAssetsOut = new Map()
@@ -103,6 +103,18 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, a
       if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
         allocation.notarysig = Buffer.alloc(65, 0)
       }
+      // auxfee is set and its an allocation send
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeekeyid && utxoAssetObj.auxfeekeyid.length > 0 && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        let totalAssetValue = ext.BN_ZERO
+        // find total amount for this asset from assetMap
+        valueAssetIn.outputs.forEach(output => {
+          totalAssetValue = ext.add(totalAssetValue, output.value)
+        })
+        // get auxfee based on auxfee table and total amount sending
+        const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+        allocation.values.push({ n: outputs.length, value: auxfeeValue })
+        outputs.push({ address: utxoAssetObj.auxfeekeyid, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+      }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
     }
@@ -110,7 +122,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, a
   return 1
 }
 
-function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, assets) {
+function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets) {
   // select asset outputs and de-duplicate inputs already selected
   let utxoSys = utxos.filter(utxo => utxo.assetInfo !== undefined && !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.concat().sort(function (a, b) {
@@ -118,9 +130,9 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   })
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate)
+  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
   if (base.inputs) {
-    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, assets)) {
+    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets)) {
       return {}
     }
     return base
@@ -129,9 +141,9 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   // instead of accumulate between the two coin selection algorithms
   inputs = inputsCopy
   // else, try the accumulative strategy
-  const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate)
+  const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
   if (res.inputs) {
-    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, assets)) {
+    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets)) {
       return {}
     }
   }
