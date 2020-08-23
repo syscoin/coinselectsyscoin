@@ -52,6 +52,12 @@ function accumulative (utxos, inputs, outputs, feeRate, assets) {
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
         }
+        // add bytes and fees for notary signature
+        if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
+          const sigBytes = new BN(65)
+          bytesAccum = ext.add(bytesAccum, sigBytes)
+          feeBytes = ext.add(feeBytes, sigBytes)
+        }
       }
     }
     fee = ext.mul(feeRate, bytesAccum)
