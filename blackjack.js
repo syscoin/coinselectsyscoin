@@ -83,7 +83,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     if (utxoAssetObj === undefined) {
       continue
     }
-    const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig }
+    const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     // auxfee is set and its an allocation send
     if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
       let totalAssetValue = ext.BN_ZERO
