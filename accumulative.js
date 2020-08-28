@@ -90,6 +90,8 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       // if notary is set in the asset object use notarysig of asset map which is likely prefilled 65 bytes from sanitizeUtxos
       if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
         assetAllocation.notarysig = utxoAssetObj.notarysig
+      } else {
+        assetAllocation.notarysig = Buffer.from('')
       }
       // auxfee is set and its an allocation send
       if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
