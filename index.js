@@ -98,13 +98,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       if (utxoAssetObj === undefined) {
         continue
       }
-      const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: Buffer.from('') }
-      // if notary is set in the asset object use notarysig of asset map which is likely prefilled 65 bytes from sanitizeUtxos
-      if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
-        allocation.notarysig = utxoAssetObj.notarysig
-      } else {
-        allocation.notarysig = Buffer.from('')
-      }
+      const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig }
       // auxfee is set and its an allocation send
       if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
         let totalAssetValue = ext.BN_ZERO
