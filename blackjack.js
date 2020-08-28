@@ -84,9 +84,9 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       continue
     }
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: Buffer.from('') }
-    // if notary is set in the asset object pre-fill 65 bytes
+    // if notary is set in the asset object use notarysig of asset map which is likely prefilled 65 bytes from sanitizeUtxos
     if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
-      assetAllocation.notarysig = Buffer.alloc(65, 0)
+      assetAllocation.notarysig = utxoAssetObj.notarysig
     }
     // auxfee is set and its an allocation send
     if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
