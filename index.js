@@ -1,5 +1,4 @@
 var accumulative = require('./accumulative')
-var blackjack = require('./blackjack')
 var utils = require('./utils')
 var ext = require('./bn-extensions')
 
@@ -13,23 +12,12 @@ function coinSelect (utxos, inputs, outputs, feeRate, assets) {
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
-  var inputsCopy = inputs.slice(0)
-  // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
-  if (base.inputs && base.inputs.length > 0) return base
-  // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
-  // instead of accumulate between the two coin selection algorithms
-  inputs = inputsCopy
   // else, try the accumulative strategy
   return accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
 }
 
 function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
-  // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
-  if (base.inputs && base.inputs.length > 0) return base
-
   // else, try the accumulative strategy
   return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
 }
@@ -124,21 +112,9 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
-  var inputsCopy = inputs.slice(0)
-  // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
-  if (base.inputs && base.inputs.length > 0) {
-    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets)) {
-      return {}
-    }
-    return base
-  }
-  // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
-  // instead of accumulate between the two coin selection algorithms
-  inputs = inputsCopy
   // else, try the accumulative strategy
   const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
-  if (res.inputs && res.inputs.length > 0) {
+  if (res.inputs) {
     if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets)) {
       return {}
     }

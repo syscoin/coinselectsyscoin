@@ -1,6 +1,6 @@
 {
   "name": "coinselectsyscoin",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "A transaction input selection module for syscoin.",
   "keywords": [
     "coinselect",
@@ -27,7 +27,6 @@
   "files": [
     "bn-extensions.js",
     "accumulative.js",
-    "blackjack.js",
     "break.js",
     "index.js",
     "split.js",

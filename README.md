@@ -11,13 +11,7 @@ An unspent transaction output (UTXO) selection module for syscoin.
 
 
 ## Algorithms
-Module | Algorithm | Re-orders UTXOs?
--|-|-
-`require('coinselectsyscoin')` | Blackjack, with Accumulative fallback | By Descending Value
-`require('coinselectsyscoin/accumulative')` | Accumulative - accumulates inputs until the target value (+fees) is reached, skipping detrimental inputs | -
-`require('coinselectsyscoin/blackjack')` | Blackjack - accumulates inputs until the target value (+fees) is matched, does not accumulate inputs that go over the target value (within a threshold) | -
-`require('coinselectsyscoin/break')` | Break - breaks the input values into equal denominations of `output` (as provided) | -
-`require('coinselectsyscoin/split')` | Split - splits the input values evenly between all `outputs`, any provided `output` with `.value` remains unchanged | -
+Accumulative - accumulates inputs until the target value (+fees) is reached, skipping detrimental inputs
 
 
 **Note:** Each algorithm will add a change output if the `input - output - fee` value difference is over a dust threshold.

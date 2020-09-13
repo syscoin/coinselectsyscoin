@@ -46,50 +46,6 @@ module.exports = [{
   }
 },
 {
-  description: '1 output, sub-optimal inputs (if re-ordered), direct possible',
-  feeRate: new BN(10),
-  inputs: [
-    new BN(10000),
-    new BN(40000),
-    new BN(40000)
-  ],
-  outputs: [
-    new BN(7700)
-  ],
-  expected: {
-    inputs: [{
-      i: 0,
-      value: new BN(10000)
-    }],
-    outputs: [{
-      value: new BN(7700)
-    }],
-    fee: new BN(2300)
-  }
-},
-{
-  description: '1 output, sub-optimal inputs (if re-ordered), direct possible, but slightly higher fee',
-  feeRate: new BN(10),
-  inputs: [
-    new BN(10000),
-    new BN(40000),
-    new BN(40000)
-  ],
-  outputs: [
-    new BN(6800)
-  ],
-  expected: {
-    inputs: [{
-      i: 0,
-      value: new BN(10000)
-    }],
-    outputs: [{
-      value: new BN(6800)
-    }],
-    fee: new BN(3200)
-  }
-},
-{
   description: '1 output, sub-optimal inputs (if re-ordered, no direct possible), change expected',
   feeRate: new BN(5),
   inputs: [
