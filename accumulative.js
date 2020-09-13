@@ -81,7 +81,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
   let auxfeeValue = ext.BN_ZERO
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = assets ? assets.get(assetGuid) : {}
+    const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
     if (utxoAssetObj === undefined) {
       continue
     }

@@ -16,7 +16,7 @@ function coinSelect (utxos, inputs, outputs, feeRate, assets) {
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
-  if (base.inputs) return base
+  if (base.inputs && base.inputs.length > 0) return base
   // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
   // instead of accumulate between the two coin selection algorithms
   inputs = inputsCopy
@@ -28,7 +28,7 @@ function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
-  if (base.inputs) return base
+  if (base.inputs && base.inputs.length > 0) return base
 
   // else, try the accumulative strategy
   return accumulative.accumulativeAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
@@ -94,7 +94,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         return null
       }
       const valueDiff = valueAssetIn
-      const utxoAssetObj = assets ? assets.get(assetGuid) : {}
+      const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
       if (utxoAssetObj === undefined) {
         continue
       }
@@ -127,7 +127,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
-  if (base.inputs) {
+  if (base.inputs && base.inputs.length > 0) {
     if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets)) {
       return {}
     }
@@ -138,7 +138,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   inputs = inputsCopy
   // else, try the accumulative strategy
   const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
-  if (res.inputs) {
+  if (res.inputs && res.inputs.length > 0) {
     if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets)) {
       return {}
     }

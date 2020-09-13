@@ -79,7 +79,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   }
 
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = assets ? assets.get(assetGuid) : {}
+    const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
     if (utxoAssetObj === undefined) {
       continue
     }
