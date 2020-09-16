@@ -114,7 +114,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       assetAllocations.push(assetAllocation)
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
-
+    assetAllocations.push(assetAllocation)
     // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
     let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
