@@ -78,33 +78,43 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     mapAssetAmounts.set(String(input.assetInfo.assetGuid) + '-' + input.assetInfo.value.toString(10), i)
   }
 
+  // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
     const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
     if (utxoAssetObj === undefined) {
       continue
     }
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
-    // auxfee is set and its an allocation send
-    if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
-      let totalAssetValue = ext.BN_ZERO
-      // find total amount for this asset from assetMap
-      valueAssetObj.outputs.forEach(output => {
-        totalAssetValue = ext.add(totalAssetValue, output.value)
-      })
-      // get auxfee based on auxfee table and total amount sending
-      auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
-      assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-      outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+    if (!isAsset) {
+      // auxfee is set and its an allocation send
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        let totalAssetValue = ext.BN_ZERO
+        // find total amount for this asset from assetMap
+        valueAssetObj.outputs.forEach(output => {
+          totalAssetValue = ext.add(totalAssetValue, output.value)
+        })
+        // get auxfee based on auxfee table and total amount sending
+        auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
+        assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
+        outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+      }
     }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
-      outputs.push({ assetChangeIndex: output.address === valueAssetObj.changeAddress ? assetAllocation.values.length - 1 : null, type: 'BECH32', address: output.address, assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      if (output.address === valueAssetObj.changeAddress) {
+        // add change index
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      } else {
+        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+      }
     })
-    assetAllocations.push(assetAllocation)
+
     // if not expecting asset to be funded, we just want outputs then return here without inputs
     if (isNonAssetFunded) {
+      assetAllocations.push(assetAllocation)
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
+
     // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
     let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
