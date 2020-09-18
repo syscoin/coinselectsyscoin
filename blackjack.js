@@ -32,31 +32,17 @@ function blackjack (utxos, inputs, outputs, feeRate, assets) {
     if (input.assetInfo) {
       outAccum = ext.add(outAccum, dustAmount)
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
+      // double up to be safe
+      bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+      feeBytes = ext.add(feeBytes, changeOutputBytes)
       // add another bech32 output for OP_RETURN overhead
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
-      if (assets) {
-        if (assets.has(input.assetInfo.assetGuid)) {
-          const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
-          // auxfee for this asset exists add another output
-          if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
-            outAccum = ext.add(outAccum, dustAmount)
-            bytesAccum = ext.add(bytesAccum, changeOutputBytes)
-            feeBytes = ext.add(feeBytes, changeOutputBytes)
-            // add another bech32 output for OP_RETURN overhead
-            // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
-            bytesAccum = ext.add(bytesAccum, changeOutputBytes)
-            feeBytes = ext.add(feeBytes, changeOutputBytes)
-          }
-          // add bytes and fees for notary signature
-          if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
-            const sigBytes = new BN(65)
-            bytesAccum = ext.add(bytesAccum, sigBytes)
-            feeBytes = ext.add(feeBytes, sigBytes)
-          }
-        } else {
-          // this asset input doesn't have an output so we must add some cost for asset change which should get filled via syncAllocationsWithInOut
+      if (assets && assets.has(input.assetInfo.assetGuid)) {
+        const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
+        // auxfee for this asset exists add another output
+        if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
@@ -64,6 +50,12 @@ function blackjack (utxos, inputs, outputs, feeRate, assets) {
           // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
+        }
+        // add bytes and fees for notary signature
+        if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
+          const sigBytes = new BN(65)
+          bytesAccum = ext.add(bytesAccum, sigBytes)
+          feeBytes = ext.add(feeBytes, sigBytes)
         }
       }
     }
