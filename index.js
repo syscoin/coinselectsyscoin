@@ -66,7 +66,13 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
-      const valueDiff = ext.sub(valueAssetIn, valueAssetOut)
+      var valueDiff
+       // for SYS burn to SYSX we actually just take valueIn because valueOut is created based on SYS burn so we shoudn't valueIn-valueOut in that case
+      if(txVersion !== utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
+        valueDiff = ext.sub(valueAssetIn, valueAssetOut)
+      } else {
+        valueDiff = valueAssetIn
+      }
       if (valueDiff.isNeg()) {
         console.log('addAssetChangeFromGas: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn)
         return null
