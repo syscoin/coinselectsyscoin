@@ -37,7 +37,7 @@ function blackjack (utxos, inputs, outputs, feeRate, assets) {
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
       if (assets) {
-        if(assets.has(input.assetInfo.assetGuid)) {
+        if (assets.has(input.assetInfo.assetGuid)) {
           const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
           // auxfee for this asset exists add another output
           if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
