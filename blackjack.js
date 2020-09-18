@@ -80,10 +80,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
 
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
-    if (utxoAssetObj === undefined) {
-      continue
-    }
+    const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send

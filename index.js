@@ -94,10 +94,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         return null
       }
       const valueDiff = valueAssetIn
-      const utxoAssetObj = (assetGuid > 0 && assets) ? assets.get(assetGuid) : {}
-      if (utxoAssetObj === undefined) {
-        continue
-      }
+      const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
       const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
       // auxfee is set and its an allocation send
       if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
