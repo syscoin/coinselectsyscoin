@@ -8,20 +8,20 @@ function utxoScore (x, feeRate) {
   return ext.sub(x.value, ext.mul(feeRate, utils.inputBytes(x)))
 }
 
-function coinSelect (utxos, inputs, outputs, feeRate, assets) {
+function coinSelect (utxos, inputs, outputs, feeRate, assets, txVersion) {
   let utxoSys = utxos.filter(utxo => !utxo.assetInfo)
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
+  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (base.inputs && base.inputs.length > 0) return base
   // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
   // instead of accumulate between the two coin selection algorithms
   inputs = inputsCopy
   // else, try the accumulative strategy
-  return accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
+  return accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets, txVersion)
 }
 
 function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
