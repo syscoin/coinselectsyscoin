@@ -1,5 +1,7 @@
 var BN = require('bn.js')
 var ext = require('./bn-extensions')
+const bitcoinops = require('bitcoin-ops')
+const bitcoin = require('bitcoinjs-lib')
 const SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN = 128
 const SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION = 129
 const SYSCOIN_TX_VERSION_ASSET_ACTIVATE = 130
@@ -72,23 +74,31 @@ function sumForgiving (range) {
   ext.BN_ZERO)
 }
 
-function sumOrNaN (range) {
+function sumOrNaN (range, txVersion) {
   return range.reduce(function (a, x) {
-    return ext.add(a, uintOrNull(x.value))
+    var value = x.value
+    // if SYS to SYSX we don't want to account for the SYS burn amount in outputs (where txVersion is passed in)
+    if (txVersion && x.script && txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
+      const chunks = bitcoin.script.decompile(x.script)
+      if (chunks[0] === bitcoinops.OP_RETURN) {
+        value = ext.BN_ZERO
+      }
+    }
+    return ext.add(a, uintOrNull(value))
   }, ext.BN_ZERO)
 }
 
-function finalize (inputs, outputs, feeRate, feeBytes) {
+function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   var bytesAccum = transactionBytes(inputs, outputs)
   var feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
-  var remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs), feeAfterExtraOutput))
+  var remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs, txVersion), feeAfterExtraOutput))
 
   // is it worth a change output?
   if (ext.gt(remainderAfterExtraOutput, dustThreshold({}, feeRate))) {
     outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }
 
-  var fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs))
+  var fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs, txVersion))
   if (!fee) return { fee: ext.mul(feeRate, bytesAccum) }
 
   return {

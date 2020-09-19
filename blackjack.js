@@ -1,8 +1,6 @@
 var utils = require('./utils')
 var ext = require('./bn-extensions')
 var BN = require('bn.js')
-const bitcoinops = require('bitcoin-ops')
-const bitcoin = require('bitcoinjs-lib')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
 function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
@@ -11,24 +9,14 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
   var feeBytes = new BN(changeOutputBytes)
   var bytesAccum = utils.transactionBytes(inputs, outputs)
   var inAccum = utils.sumOrNaN(inputs)
-  var outAccum = utils.sumOrNaN(outputs)
-  if (txVersion === utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
-    for (var i = 0; i < outputs.length; i++) {
-      if (outputs[i].script) {
-        const chunks = bitcoin.script.decompile(outputs[i].script)
-        if (chunks[0] === bitcoinops.OP_RETURN) {
-          outAccum = ext.sub(outAccum, outputs[i].value)
-        }
-      }
-    }
-  }
+  var outAccum = utils.sumOrNaN(outputs, txVersion)
   var fee = ext.mul(feeRate, bytesAccum)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
 
   var threshold = utils.dustThreshold({}, feeRate)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
-  for (i = 0; i < utxos.length; i++) {
+  for (var i = 0; i < utxos.length; i++) {
     var input = utxos[i]
     var inputBytes = utils.inputBytes(input)
     fee = ext.mul(feeRate, ext.add(bytesAccum, inputBytes))

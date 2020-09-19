@@ -1,8 +1,6 @@
 var utils = require('./utils')
 var ext = require('./bn-extensions')
 var BN = require('bn.js')
-const bitcoinops = require('bitcoin-ops')
-const bitcoin = require('bitcoinjs-lib')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
 function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
@@ -11,22 +9,12 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
   var feeBytes = new BN(changeOutputBytes)
   var bytesAccum = utils.transactionBytes(inputs, outputs)
   var inAccum = utils.sumOrNaN(inputs)
-  var outAccum = utils.sumOrNaN(outputs)
-  if (txVersion === utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
-    for (var i = 0; i < outputs.length; i++) {
-      if (outputs[i].script) {
-        const chunks = bitcoin.script.decompile(outputs[i].script)
-        if (chunks[0] === bitcoinops.OP_RETURN) {
-          outAccum = ext.sub(outAccum, outputs[i].value)
-        }
-      }
-    }
-  }
+  var outAccum = utils.sumOrNaN(outputs, txVersion)
   var fee = ext.mul(feeRate, bytesAccum)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
-  for (i = 0; i < utxos.length; i++) {
+  for (var i = 0; i < utxos.length; i++) {
     var utxo = utxos[i]
     var utxoBytes = utils.inputBytes(utxo)
     var utxoFee = ext.mul(feeRate, utxoBytes)
