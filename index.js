@@ -129,7 +129,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   })
   var inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets)
+  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (base.inputs && base.inputs.length > 0) {
     if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets)) {
       return {}
@@ -140,7 +140,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   // instead of accumulate between the two coin selection algorithms
   inputs = inputsCopy
   // else, try the accumulative strategy
-  const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets)
+  const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (res.inputs) {
     if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets)) {
       return {}
