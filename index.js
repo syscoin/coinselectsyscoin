@@ -103,7 +103,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
       const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
       // auxfee is set and its an allocation send
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
         let totalAssetValue = ext.BN_ZERO
         // find total amount for this asset from assetMap
         valueAssetIn.outputs.forEach(output => {
@@ -112,7 +112,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         // get auxfee based on auxfee table and total amount sending
         const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
         allocation.values.push({ n: outputs.length, value: auxfeeValue })
-        outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+        outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
       }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)

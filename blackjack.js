@@ -42,7 +42,7 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
       if (assets && assets.has(input.assetInfo.assetGuid)) {
         const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
-        if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        if (utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
@@ -93,7 +93,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND  && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
         let totalAssetValue = ext.BN_ZERO
         // find total amount for this asset from assetMap
         valueAssetObj.outputs.forEach(output => {
@@ -102,7 +102,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         // get auxfee based on auxfee table and total amount sending
         auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
         assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-        outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+        outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
       }
     }
     valueAssetObj.outputs.forEach(output => {

@@ -47,7 +47,7 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
       if (assets && assets.has(utxo.assetInfo.assetGuid)) {
         const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
-        if (utxoAssetObj.auxfeeaddress && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        if (utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
