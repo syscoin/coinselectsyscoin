@@ -46,7 +46,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       }
       var assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid)
       assetAllocationValueIn.value = ext.add(assetAllocationValueIn.value, input.assetInfo.value)
-      assetAllocationValueIn.zeroval = assetAllocationValueIn.zeroval || assetAllocationValueIn.value.isZero()
+      assetAllocationValueIn.zeroval = assetAllocationValueIn.zeroval || input.assetInfo.value.isZero()
       mapAssetsIn.set(input.assetInfo.assetGuid, assetAllocationValueIn)
     }
   })
@@ -58,7 +58,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       }
       var assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid)
       assetAllocationValueOut.value = ext.add(assetAllocationValueOut.value, output.value)
-      assetAllocationValueOut.zeroval = assetAllocationValueOut.zeroval || assetAllocationValueOut.value.isZero()
+      assetAllocationValueOut.zeroval = assetAllocationValueOut.zeroval || output.value.isZero()
       mapAssetsOut.set(voutAsset.assetGuid, assetAllocationValueOut)
     })
   })
