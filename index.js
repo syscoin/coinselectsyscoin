@@ -78,7 +78,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       if (valueDiff.isNeg()) {
         console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn.value)
         return null
-      } else if (valueDiff.isZero()) {
+      // if zero and zeroval's match then we skip, zero val not matching should create output below if zeroval input exists but not output
+      } else if (valueDiff.isZero() && valueAssetIn.zeroval === valueAssetOut.zeroval) {
         continue
       }
       if (assetAllocation === undefined) {
