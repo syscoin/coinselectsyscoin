@@ -42,10 +42,11 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   inputs.forEach(input => {
     if (input.assetInfo) {
       if (!mapAssetsIn.has(input.assetInfo.assetGuid)) {
-        mapAssetsIn.set(input.assetInfo.assetGuid, ext.BN_ZERO)
+        mapAssetsIn.set(input.assetInfo.assetGuid, { value: ext.BN_ZERO, zeroval: false })
       }
       var assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid)
-      assetAllocationValueIn = ext.add(assetAllocationValueIn, input.assetInfo.value)
+      assetAllocationValueIn.value = ext.add(assetAllocationValueIn.value, input.assetInfo.value)
+      assetAllocationValueIn.zeroval = assetAllocationValueIn.zeroval || assetAllocationValueIn.value.isZero()
       mapAssetsIn.set(input.assetInfo.assetGuid, assetAllocationValueIn)
     }
   })
@@ -53,10 +54,11 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   assetAllocations.forEach(voutAsset => {
     voutAsset.values.forEach(output => {
       if (!mapAssetsOut.has(voutAsset.assetGuid)) {
-        mapAssetsOut.set(voutAsset.assetGuid, ext.BN_ZERO)
+        mapAssetsOut.set(voutAsset.assetGuid, { value: ext.BN_ZERO, zeroval: false })
       }
       var assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid)
-      assetAllocationValueOut = ext.add(assetAllocationValueOut, output.value)
+      assetAllocationValueOut.value = ext.add(assetAllocationValueOut.value, output.value)
+      assetAllocationValueOut.zeroval = assetAllocationValueOut.zeroval || assetAllocationValueOut.value.isZero()
       mapAssetsOut.set(voutAsset.assetGuid, assetAllocationValueOut)
     })
   })
@@ -64,28 +66,36 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
     const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
-    if (mapAssetsOut.has(assetGuid)) {
+    const valueAssetOut = mapAssetsOut.get(assetGuid)
+    // also ensure zero val matches, otherwise
+    if (!valueAssetOut || valueAssetOut.zeroval !== valueAssetIn.zeroval) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
       var valueDiff
       // for SYS burn to SYSX we actually just take valueIn because valueOut is created based on SYS burn so we shoudn't valueIn-valueOut in that case
       if (txVersion !== utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
-        valueDiff = ext.sub(valueAssetIn, valueAssetOut)
+        valueDiff = ext.sub(valueAssetIn.value, valueAssetOut)
       } else {
-        valueDiff = valueAssetIn
+        valueDiff = valueAssetIn.value
       }
       if (valueDiff.isNeg()) {
-        console.log('addAssetChangeFromGas: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn)
+        console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn.value)
         return null
       } else if (valueDiff.isZero()) {
         continue
       }
       if (assetAllocation === undefined) {
-        console.log('addAssetChangeFromGas: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
+        console.log('syncAllocationsWithInOut: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
+        return null
+      }
+      if (!valueAssetIn.zeroval && valueAssetOut.zeroval) {
+        console.log('syncAllocationsWithInOut: input not zero val but output does have zero val for asset guid: ' + assetGuid)
         return null
       }
       const assetChangeOutputs = outputs.filter(output => (output.assetInfo !== undefined && output.assetInfo.assetGuid === assetGuid && output.assetChangeIndex !== undefined))
       // if change output already exists just set new value otherwise create new output and allocation
-      if (assetChangeOutputs.length > 0) {
+      // also if input has zero val input but output does not, also create new output instead of just updating existing
+      // zeroval outputs denote asset ownership (different than asset allocation ownership which are the tokens inside of the asset)
+      if (assetChangeOutputs.length > 0 && !(valueAssetIn.zeroval && !valueAssetOut.zeroval)) {
         const assetChangeOutput = assetChangeOutputs[0]
         assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
         assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
@@ -96,24 +106,12 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
     // asset does not exist in output, create it
     } else {
       if (assetAllocation !== undefined) {
-        console.log('addAssetChangeFromGas: inconsistency related to outputs with NO asset and assetAllocation with asset guid: ' + assetGuid)
+        console.log('syncAllocationsWithInOut: inconsistency related to outputs with NO asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
-      const valueDiff = valueAssetIn
+      const valueDiff = valueAssetIn.value
       const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
       const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
-      // auxfee is set and its an allocation send
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
-        let totalAssetValue = ext.BN_ZERO
-        // find total amount for this asset from assetMap
-        valueAssetIn.outputs.forEach(output => {
-          totalAssetValue = ext.add(totalAssetValue, output.value)
-        })
-        // get auxfee based on auxfee table and total amount sending
-        const auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
-        allocation.values.push({ n: outputs.length, value: auxfeeValue })
-        outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
-      }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
     }
