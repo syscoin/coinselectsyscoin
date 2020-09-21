@@ -66,14 +66,12 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
     const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
-    const valueAssetOut = mapAssetsOut.get(assetGuid)
-    // also ensure zero val matches, otherwise
-    if (!valueAssetOut || valueAssetOut.zeroval !== valueAssetIn.zeroval) {
+    if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
       var valueDiff
       // for SYS burn to SYSX we actually just take valueIn because valueOut is created based on SYS burn so we shoudn't valueIn-valueOut in that case
       if (txVersion !== utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
-        valueDiff = ext.sub(valueAssetIn.value, valueAssetOut)
+        valueDiff = ext.sub(valueAssetIn.value, valueAssetOut.value)
       } else {
         valueDiff = valueAssetIn.value
       }
