@@ -94,7 +94,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       // if change output already exists just set new value otherwise create new output and allocation
       // also if input has zero val input but output does not, also create new output instead of just updating existing
       // zeroval outputs denote asset ownership (different than asset allocation ownership which are the tokens inside of the asset)
-      if (assetChangeOutputs.length > 0 && !(valueAssetIn.zeroval && !valueAssetOut.zeroval)) {
+      // also ensure that if this output is zero val we don't add to it, create new output (otherwise we will lose zero value and consensus will reject likely)
+      if (assetChangeOutputs.length > 0 && !(valueAssetIn.zeroval && !valueAssetOut.zeroval) && !assetChangeOutputs[0].assetInfo.value.isZero()) {
         const assetChangeOutput = assetChangeOutputs[0]
         assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
         assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
