@@ -118,7 +118,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
-    let assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
