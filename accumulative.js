@@ -152,7 +152,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         return utils.finalizeAssets(null, null, null, null, null)
       }
     }
-    if(!funded) {
+    if (!funded) {
       for (i = 0; i < utxoAsset.length; i++) {
         const utxo = utxoAsset[i]
         const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
