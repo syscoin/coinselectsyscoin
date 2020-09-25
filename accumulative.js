@@ -142,35 +142,41 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         }
         inputs.push(utxo)
         foundZeroVal = true
+        // if requested output was 0 then we should be done
+        if (assetOutAccum.isZero()) {
+          funded = true
+        }
         break
       }
       if (!foundZeroVal) {
         return utils.finalizeAssets(null, null, null, null, null)
       }
     }
-    for (i = 0; i < utxoAsset.length; i++) {
-      const utxo = utxoAsset[i]
-      const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
-      // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only
-      if (!hasZeroVal && utxoValue.isZero()) {
-        continue
-      }
-      inAccum = ext.add(inAccum, utxoValue)
-      inputs.push(utxo)
-      // deal with change
-      if (ext.gt(inAccum, assetOutAccum)) {
-        const changeAsset = ext.sub(inAccum, assetOutAccum)
-        // add output as dust amount (smallest possible sys output)
-        const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
-        // but asset commitment will have the full asset change value
-        assetAllocation.values.push({ n: outputs.length, value: changeAsset })
-        outputs.push(output)
-        funded = true
-        break
-      // no change, in = out
-      } else if (ext.eq(inAccum, assetOutAccum)) {
-        funded = true
-        break
+    if(!funded) {
+      for (i = 0; i < utxoAsset.length; i++) {
+        const utxo = utxoAsset[i]
+        const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
+        // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only
+        if (!hasZeroVal && utxoValue.isZero()) {
+          continue
+        }
+        inAccum = ext.add(inAccum, utxoValue)
+        inputs.push(utxo)
+        // deal with change
+        if (ext.gt(inAccum, assetOutAccum)) {
+          const changeAsset = ext.sub(inAccum, assetOutAccum)
+          // add output as dust amount (smallest possible sys output)
+          const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
+          // but asset commitment will have the full asset change value
+          assetAllocation.values.push({ n: outputs.length, value: changeAsset })
+          outputs.push(output)
+          funded = true
+          break
+        // no change, in = out
+        } else if (ext.eq(inAccum, assetOutAccum)) {
+          funded = true
+          break
+        }
       }
     }
     assetAllocations.push(assetAllocation)
