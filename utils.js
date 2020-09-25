@@ -88,6 +88,13 @@ function sumOrNaN (range, txVersion) {
   }, ext.BN_ZERO)
 }
 
+function hasZeroVal (range) {
+  for (var i = 0; i < range.length; i++) {
+    if (range[i].value.isZero()) { return true }
+  }
+  return false
+}
+
 function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   var bytesAccum = transactionBytes(inputs, outputs)
   var feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
@@ -170,6 +177,7 @@ module.exports = {
   SYSCOIN_TX_VERSION_ALLOCATION_SEND: SYSCOIN_TX_VERSION_ALLOCATION_SEND,
   isNonAssetFunded: isNonAssetFunded,
   isAsset: isAsset,
-  isAllocationBurn: isAllocationBurn
+  isAllocationBurn: isAllocationBurn,
+  hasZeroVal: hasZeroVal
 
 }

@@ -118,8 +118,8 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
 
-    // if new/update/send we are expecting 0 value input and 0 value output, in send case output may be positive but we fund with 0 value input (asset ownership utxo)
-    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
       assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
@@ -131,15 +131,28 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
     })
     let inAccum = ext.BN_ZERO
     let funded = false
-    for (var i = 0; i < utxoAsset.length; i++) {
+    // look for zero val input if zero val output exists
+    if (hasZeroVal) {
+      let foundZeroVal = false
+      for (var i = 0; i < utxoAsset.length; i++) {
+        const utxo = utxoAsset[i]
+        const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
+        if (!utxoValue.isZero()) {
+          continue
+        }
+        inputs.push(utxo)
+        foundZeroVal = true
+        break
+      }
+      if (!foundZeroVal) {
+        return utils.finalizeAssets(null, null, null, null, null)
+      }
+    }
+    for (i = 0; i < utxoAsset.length; i++) {
       const utxo = utxoAsset[i]
       const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
-      // asset new/update/send should be funded by 0 value input
-      if (isAsset && !utxoValue.isZero()) {
-        continue
-      }
       // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only
-      if (!isAsset && utxoValue.isZero()) {
+      if (!hasZeroVal && utxoValue.isZero()) {
         continue
       }
       inAccum = ext.add(inAccum, utxoValue)
