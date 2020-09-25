@@ -121,7 +121,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       return utils.finalizeAssets(inputs, outputs, assetAllocations)
     }
     assetAllocations.push(assetAllocation)
-    let assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
@@ -139,7 +139,9 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       // also make sure if zero val is output, that zero val input is also added
       const indexZeroVal = mapAssetAmounts.get(String(assetGuid) + '-' + ext.BN_ZERO.toString(10))
       if (indexZeroVal) {
-        inputs.push(utxos[indexZeroVal])
+        if(indexZeroVal !== index) {
+            inputs.push(utxos[indexZeroVal])
+        }
       } else {
         return utils.finalizeAssets(null, null, null)
       }
