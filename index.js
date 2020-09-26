@@ -75,13 +75,13 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
       if (isAsset || isNonAssetFunded) {
         if (assetMap.has(assetGuid)) {
-          const valueOut = assetGuid.get(assetGuid)
+          const valueOut = assetMap.get(assetGuid)
           const accumOut = utils.sumOrNaN(valueOut.outputs)
           valueDiff = ext.add(valueDiff, accumOut)
         }
       }
       if (valueDiff.isNeg()) {
-        console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn.value)
+        console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut.value + ' Input: ' + valueAssetIn.value)
         return null
       // if zero and zeroval's match then we skip, zero val not matching should create output below if zeroval input exists but not output
       } else if (valueDiff.isZero() && valueAssetIn.zeroval === valueAssetOut.zeroval) {
