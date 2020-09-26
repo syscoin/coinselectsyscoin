@@ -115,13 +115,8 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       }
     })
 
-    // if not expecting asset to be funded, we just want outputs then return here without inputs
-    if (isNonAssetFunded) {
-      assetAllocations.push(assetAllocation)
-      return utils.finalizeAssets(inputs, outputs, assetAllocations)
-    }
-    assetAllocations.push(assetAllocation)
-    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let funded = false
+    let assetOutAccum = (isNonAssetFunded || isAsset) ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
@@ -132,12 +127,10 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     if (hasZeroVal) {
       if (indexZeroVal) {
         inputs.push(utxos[indexZeroVal])
-      } else {
-        return utils.finalizeAssets(null, null, null)
       }
       // if the required amount has filled because its 0, we've just added 0 we can exit right here
       if (assetOutAccum.isZero()) {
-        return utils.finalizeAssets(inputs, outputs, assetAllocations)
+        funded = true
       }
     }
     // make sure total amount output exists
@@ -145,8 +138,12 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     // ensure every target for asset is satisfied otherwise we fail
     if (index && indexZeroVal !== index) {
       inputs.push(utxos[index])
-    } else {
-      return utils.finalizeAssets(null, null, null)
+      funded = true
+    }
+    assetAllocations.push(assetAllocation)
+    // shortcut when we know an asset spend is not funded
+    if (!funded) {
+      return utils.finalizeAssets(null, null, null, null, null)
     }
   }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)

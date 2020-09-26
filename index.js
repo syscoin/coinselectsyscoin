@@ -35,8 +35,10 @@ function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
 }
 // create map of assets on inputs and outputs, compares the two and adds to outputs if any are not accounted for on inputs
 // the goal is to either have new outputs created to match inputs or to update output change values to match input for each asset spent in transaction
-function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, txVersion, assets) {
+function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, txVersion, assets, assetMap) {
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  const isAsset = utils.isAsset(txVersion)
+  const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   var mapAssetsIn = new Map()
   var mapAssetsOut = new Map()
   inputs.forEach(input => {
@@ -68,12 +70,15 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
       const valueAssetOut = mapAssetsOut.get(assetGuid)
-      var valueDiff
-      // for SYS burn to SYSX we actually just take valueIn because valueOut is created based on SYS burn so we shoudn't valueIn-valueOut in that case
-      if (txVersion !== utils.SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
-        valueDiff = ext.sub(valueAssetIn.value, valueAssetOut.value)
-      } else {
-        valueDiff = valueAssetIn.value
+      let valueDiff = ext.sub(valueAssetIn.value, valueAssetOut.value)
+      // for the types of tx which create outputs without inputs we want to ensure valueDiff doesn't go negative
+      // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
+      if (isAsset || isNonAssetFunded) {
+        if (assetMap.has(assetGuid)) {
+          const valueOut = assetGuid.get(assetGuid)
+          const accumOut = utils.sumOrNaN(valueOut.outputs)
+          valueDiff = ext.add(valueDiff, accumOut)
+        }
       }
       if (valueDiff.isNeg()) {
         console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut + ' Input: ' + valueAssetIn.value)
@@ -119,7 +124,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   return 1
 }
 
-function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets) {
+function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets, assetMap) {
   // select asset outputs and de-duplicate inputs already selected
   let utxoSys = utxos.filter(utxo => utxo.assetInfo !== undefined && !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.concat().sort(function (a, b) {
@@ -129,7 +134,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   // attempt to use the blackjack strategy first (no change output)
   var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (base.inputs && base.inputs.length > 0) {
-    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets)) {
+    if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets, assetMap)) {
       return {}
     }
     return base
@@ -140,7 +145,7 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   // else, try the accumulative strategy
   const res = accumulative.accumulative(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (res.inputs) {
-    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets)) {
+    if (!syncAllocationsWithInOut(assetAllocations, res.inputs, res.outputs, feeRate, txVersion, assets, assetMap)) {
       return {}
     }
   }

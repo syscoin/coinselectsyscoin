@@ -112,13 +112,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       }
     })
 
-    // if not expecting asset to be funded, we just want outputs then return here without inputs
-    if (isNonAssetFunded) {
-      assetAllocations.push(assetAllocation)
-      return utils.finalizeAssets(inputs, outputs, assetAllocations)
-    }
-
-    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = (isNonAssetFunded || isAsset) ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
@@ -134,7 +128,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
     // look for zero val input if zero val output exists
     if (hasZeroVal) {
       let foundZeroVal = false
-      for (var i = 0; i < utxoAsset.length; i++) {
+      for (var i = utxoAsset.length - 1; i >= 0; i--) {
         const utxo = utxoAsset[i]
         const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
         if (!utxoValue.isZero()) {
