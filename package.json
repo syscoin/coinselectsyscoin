@@ -1,6 +1,6 @@
 {
   "name": "coinselectsyscoin",
-  "version": "1.0.52",
+  "version": "1.0.53",
   "description": "A transaction input selection module for syscoin.",
   "keywords": [
     "coinselect",

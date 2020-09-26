@@ -127,24 +127,26 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
       assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
     }
-    // make sure total amount output exists
-    const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
-    // ensure every target for asset is satisfied otherwise we fail
-    if (index) {
-      inputs.push(utxos[index])
-    } else {
-      return utils.finalizeAssets(null, null, null)
-    }
+    // make sure if zero val is output, that zero val input is also added
+    const indexZeroVal = mapAssetAmounts.get(String(assetGuid) + '-' + ext.BN_ZERO.toString(10))
     if (hasZeroVal) {
-      // also make sure if zero val is output, that zero val input is also added
-      const indexZeroVal = mapAssetAmounts.get(String(assetGuid) + '-' + ext.BN_ZERO.toString(10))
       if (indexZeroVal) {
-        if (indexZeroVal !== index) {
-          inputs.push(utxos[indexZeroVal])
-        }
+        inputs.push(utxos[indexZeroVal])
       } else {
         return utils.finalizeAssets(null, null, null)
       }
+      // if the required amount has filled because its 0, we've just added 0 we can exit right here
+      if (assetOutAccum.isZero()) {
+        return utils.finalizeAssets(inputs, outputs, assetAllocations)
+      }
+    }
+    // make sure total amount output exists
+    const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
+    // ensure every target for asset is satisfied otherwise we fail
+    if (index && indexZeroVal !== index) {
+      inputs.push(utxos[index])
+    } else {
+      return utils.finalizeAssets(null, null, null)
     }
   }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
