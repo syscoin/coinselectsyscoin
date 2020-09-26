@@ -124,9 +124,9 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       return ext.sub(b.assetInfo.value, a.assetInfo.value)
     })
     let inAccum = ext.BN_ZERO
-    let funded = false
+    let funded = txVersion === utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE
     // look for zero val input if zero val output exists
-    if (hasZeroVal) {
+    if (hasZeroVal && !funded) {
       let foundZeroVal = false
       for (var i = utxoAsset.length - 1; i >= 0; i--) {
         const utxo = utxoAsset[i]
@@ -164,20 +164,14 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
           // but asset commitment will have the full asset change value
           assetAllocation.values.push({ n: outputs.length, value: changeAsset })
           outputs.push(output)
-          funded = true
           break
         // no change, in = out
         } else if (ext.eq(inAccum, assetOutAccum)) {
-          funded = true
           break
         }
       }
     }
     assetAllocations.push(assetAllocation)
-    // shortcut when we know an asset spend is not funded
-    if (!funded) {
-      return utils.finalizeAssets(null, null, null, null, null)
-    }
   }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
 }

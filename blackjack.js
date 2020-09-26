@@ -124,7 +124,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     }
     // make sure if zero val is output, that zero val input is also added
     const indexZeroVal = mapAssetAmounts.get(String(assetGuid) + '-' + ext.BN_ZERO.toString(10))
-    if (hasZeroVal) {
+    if (hasZeroVal && txVersion !== utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE) {
       if (indexZeroVal) {
         inputs.push(utxos[indexZeroVal])
       }
@@ -136,7 +136,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     // make sure total amount output exists
     const index = mapAssetAmounts.get(String(assetGuid) + '-' + assetOutAccum.toString(10))
     // ensure every target for asset is satisfied otherwise we fail
-    if (index && indexZeroVal !== index) {
+    if (!funded && index) {
       inputs.push(utxos[index])
       funded = true
     }
