@@ -125,8 +125,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
 }
 
 function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets, assetMap) {
-  // select asset outputs and de-duplicate inputs already selected
-  let utxoSys = utxos.filter(utxo => utxo.assetInfo !== undefined && !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
+  // select outputs and de-duplicate inputs already selected
+  let utxoSys = utxos.filter(utxo => !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
