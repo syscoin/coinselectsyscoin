@@ -114,9 +114,13 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
     })
-
+    // if not expecting asset to be funded, we just want outputs then return here without inputs
+    if (isNonAssetFunded) {
+      assetAllocations.push(assetAllocation)
+      return utils.finalizeAssets(inputs, outputs, assetAllocations)
+    }
     let funded = false
-    let assetOutAccum = (isNonAssetFunded || isAsset) ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
     const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
     // if auxfee exists add total output for asset with auxfee so change is calculated properly
     if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
