@@ -1,7 +1,7 @@
-var tape = require('tape')
-var utils = require('../utils')
-var BN = require('bn.js')
-var ext = require('../bn-extensions')
+const tape = require('tape')
+const utils = require('../utils')
+const BN = require('bn.js')
+const ext = require('../bn-extensions')
 
 tape('utils', function (t) {
   t.test('uintOrNull', function (t) {

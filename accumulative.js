@@ -1,24 +1,24 @@
-var utils = require('./utils')
-var ext = require('./bn-extensions')
-var BN = require('bn.js')
+const utils = require('./utils')
+const ext = require('./bn-extensions')
+const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
 function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
   if (!utils.uintOrNull(feeRate)) return {}
-  var changeOutputBytes = utils.outputBytes({})
-  var feeBytes = new BN(changeOutputBytes)
-  var bytesAccum = utils.transactionBytes(inputs, outputs)
-  var inAccum = utils.sumOrNaN(inputs)
-  var outAccum = utils.sumOrNaN(outputs, txVersion)
-  var fee = ext.mul(feeRate, bytesAccum)
+  const changeOutputBytes = utils.outputBytes({})
+  let feeBytes = new BN(changeOutputBytes)
+  let bytesAccum = utils.transactionBytes(inputs, outputs)
+  let inAccum = utils.sumOrNaN(inputs)
+  let outAccum = utils.sumOrNaN(outputs, txVersion)
+  let fee = ext.mul(feeRate, bytesAccum)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
-  for (var i = 0; i < utxos.length; i++) {
-    var utxo = utxos[i]
-    var utxoBytes = utils.inputBytes(utxo)
-    var utxoFee = ext.mul(feeRate, utxoBytes)
-    var utxoValue = utils.uintOrNull(utxo.value)
+  for (let i = 0; i < utxos.length; i++) {
+    const utxo = utxos[i]
+    const utxoBytes = utils.inputBytes(utxo)
+    const utxoFee = ext.mul(feeRate, utxoBytes)
+    const utxoValue = utils.uintOrNull(utxo.value)
 
     // skip detrimental input
     if (ext.gt(utxoFee, utxoValue)) {
@@ -132,7 +132,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
     // look for zero val input if zero val output exists
     if (hasZeroVal && !funded) {
       let foundZeroVal = false
-      for (var i = utxoAsset.length - 1; i >= 0; i--) {
+      for (let i = utxoAsset.length - 1; i >= 0; i--) {
         const utxo = utxoAsset[i]
         const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
         if (!utxoValue.isZero()) {
@@ -151,7 +151,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       }
     }
     if (!funded) {
-      for (i = 0; i < utxoAsset.length; i++) {
+      for (let i = 0; i < utxoAsset.length; i++) {
         const utxo = utxoAsset[i]
         const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
         // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only

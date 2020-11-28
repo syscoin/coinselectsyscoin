@@ -1,5 +1,5 @@
-var BN = require('bn.js')
-var ext = require('./bn-extensions')
+const BN = require('bn.js')
+const ext = require('./bn-extensions')
 const bitcoinops = require('bitcoin-ops')
 const bitcoin = require('bitcoinjs-lib')
 const SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN = 128
@@ -20,15 +20,15 @@ function isAllocationBurn (txVersion) {
   return txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM
 }
 // baseline estimates, used to improve performance
-var TX_BASE_SIZE = new BN(10)
+const TX_BASE_SIZE = new BN(10)
 
-var TX_INPUT_SIZE = {
+const TX_INPUT_SIZE = {
   LEGACY: new BN(148),
   P2SH: new BN(92),
   BECH32: new BN(69)
 }
 
-var TX_OUTPUT_SIZE = {
+const TX_OUTPUT_SIZE = {
   LEGACY: new BN(34),
   P2SH: new BN(32),
   BECH32: new BN(31)
@@ -68,7 +68,7 @@ function uintOrNull (v) {
 
 function sumForgiving (range) {
   return range.reduce(function (a, x) {
-    var valueOrZero = BN.isBN(x.value) ? x.value : ext.BN_ZERO
+    const valueOrZero = BN.isBN(x.value) ? x.value : ext.BN_ZERO
     return ext.add(a, valueOrZero)
   },
   ext.BN_ZERO)
@@ -76,7 +76,7 @@ function sumForgiving (range) {
 
 function sumOrNaN (range, txVersion) {
   return range.reduce(function (a, x) {
-    var value = x.value
+    let value = x.value
     // if SYS to SYSX we don't want to account for the SYS burn amount in outputs (where txVersion is passed in)
     if (txVersion && x.script && txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION) {
       const chunks = bitcoin.script.decompile(x.script)
@@ -89,23 +89,23 @@ function sumOrNaN (range, txVersion) {
 }
 
 function hasZeroVal (range) {
-  for (var i = 0; i < range.length; i++) {
+  for (let i = 0; i < range.length; i++) {
     if (range[i].value.isZero()) { return true }
   }
   return false
 }
 
 function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
-  var bytesAccum = transactionBytes(inputs, outputs)
-  var feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
-  var remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs, txVersion), feeAfterExtraOutput))
+  const bytesAccum = transactionBytes(inputs, outputs)
+  const feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
+  const remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs, txVersion), feeAfterExtraOutput))
 
   // is it worth a change output?
   if (ext.gt(remainderAfterExtraOutput, dustThreshold({}, feeRate))) {
     outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }
 
-  var fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs, txVersion))
+  const fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs, txVersion))
   if (!fee) return { fee: ext.mul(feeRate, bytesAccum) }
 
   return {

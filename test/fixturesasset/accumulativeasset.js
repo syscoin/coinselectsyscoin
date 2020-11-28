@@ -1,5 +1,5 @@
-var BN = require('bn.js')
-var utils = require('../utils')
+const BN = require('bn.js')
+const utils = require('../utils')
 
 module.exports = [{
   description: '3 asset outputs with different guids, no asset change',

@@ -1,22 +1,22 @@
-var utils = require('./utils')
-var ext = require('./bn-extensions')
+const utils = require('./utils')
+const ext = require('./bn-extensions')
 
 // break utxos into the maximum number of 'output' possible
 module.exports = function broken (utxos, output, feeRate) {
   if (!utils.uintOrNull(feeRate)) return {}
-  var changeOutputBytes = utils.outputBytes({})
-  var bytesAccum = utils.transactionBytes(utxos, [])
-  var value = utils.uintOrNull(output.value)
-  var inAccum = utils.sumOrNaN(utxos)
+  const changeOutputBytes = utils.outputBytes({})
+  let bytesAccum = utils.transactionBytes(utxos, [])
+  const value = utils.uintOrNull(output.value)
+  const inAccum = utils.sumOrNaN(utxos)
 
   if (!value || !inAccum) return { fee: ext.mul(feeRate, bytesAccum) }
 
-  var outputBytes = utils.outputBytes(output)
-  var outAccum = ext.BN_ZERO
-  var outputs = []
+  const outputBytes = utils.outputBytes(output)
+  let outAccum = ext.BN_ZERO
+  const outputs = []
 
   while (true) {
-    var fee = ext.mul(feeRate, ext.add(bytesAccum, outputBytes))
+    const fee = ext.mul(feeRate, ext.add(bytesAccum, outputBytes))
 
     // did we bust?
     if (ext.lt(inAccum, ext.add(outAccum, fee, value))) {

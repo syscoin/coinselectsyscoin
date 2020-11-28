@@ -1,26 +1,26 @@
-var utils = require('./utils')
-var ext = require('./bn-extensions')
-var BN = require('bn.js')
+const utils = require('./utils')
+const ext = require('./bn-extensions')
+const BN = require('bn.js')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
 function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
   if (!utils.uintOrNull(feeRate)) return {}
-  var changeOutputBytes = utils.outputBytes({})
-  var feeBytes = new BN(changeOutputBytes)
-  var bytesAccum = utils.transactionBytes(inputs, outputs)
-  var inAccum = utils.sumOrNaN(inputs)
-  var outAccum = utils.sumOrNaN(outputs, txVersion)
-  var fee = ext.mul(feeRate, bytesAccum)
+  const changeOutputBytes = utils.outputBytes({})
+  let feeBytes = new BN(changeOutputBytes)
+  let bytesAccum = utils.transactionBytes(inputs, outputs)
+  let inAccum = utils.sumOrNaN(inputs)
+  let outAccum = utils.sumOrNaN(outputs, txVersion)
+  let fee = ext.mul(feeRate, bytesAccum)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
 
-  var threshold = utils.dustThreshold({}, feeRate)
+  const threshold = utils.dustThreshold({}, feeRate)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
-  for (var i = 0; i < utxos.length; i++) {
-    var input = utxos[i]
-    var inputBytes = utils.inputBytes(input)
+  for (let i = 0; i < utxos.length; i++) {
+    const input = utxos[i]
+    const inputBytes = utils.inputBytes(input)
     fee = ext.mul(feeRate, ext.add(bytesAccum, inputBytes))
-    var inputValue = utils.uintOrNull(input.value)
+    const inputValue = utils.uintOrNull(input.value)
 
     // would it waste value?
     if (ext.gt(ext.add(inAccum, inputValue), ext.add(outAccum, fee, threshold))) continue
@@ -79,7 +79,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const outputs = []
   const assetAllocations = []
   let auxfeeValue = ext.BN_ZERO
-  for (var i = 0; i < utxos.length; i++) {
+  for (let i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     if (!input.assetInfo) {
       continue

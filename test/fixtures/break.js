@@ -1,4 +1,4 @@
-var BN = require('bn.js')
+const BN = require('bn.js')
 
 module.exports = [{
   description: '1:1, no remainder',

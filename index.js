@@ -1,7 +1,7 @@
-var accumulative = require('./accumulative')
-var blackjack = require('./blackjack')
-var utils = require('./utils')
-var ext = require('./bn-extensions')
+const accumulative = require('./accumulative')
+const blackjack = require('./blackjack')
+const utils = require('./utils')
+const ext = require('./bn-extensions')
 
 // order by descending value, minus the inputs approximate fee
 function utxoScore (x, feeRate) {
@@ -13,9 +13,9 @@ function coinSelect (utxos, inputs, outputs, feeRate, assets, txVersion) {
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
-  var inputsCopy = inputs.slice(0)
+  const inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
+  const base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (base.inputs && base.inputs.length > 0) return base
   // reset inputs, in case of funding assets inputs passed into coinSelect may have assets prefunded and therefor we preserve inputs passed in
   // instead of accumulate between the two coin selection algorithms
@@ -27,7 +27,7 @@ function coinSelect (utxos, inputs, outputs, feeRate, assets, txVersion) {
 function coinSelectAsset (utxos, assetMap, feeRate, txVersion, assets) {
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
+  const base = blackjack.blackjackAsset(utxoAssets, assetMap, feeRate, txVersion, assets)
   if (base.inputs && base.inputs.length > 0) return base
 
   // else, try the accumulative strategy
@@ -39,14 +39,14 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const isAsset = utils.isAsset(txVersion)
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
-  var mapAssetsIn = new Map()
-  var mapAssetsOut = new Map()
+  const mapAssetsIn = new Map()
+  const mapAssetsOut = new Map()
   inputs.forEach(input => {
     if (input.assetInfo) {
       if (!mapAssetsIn.has(input.assetInfo.assetGuid)) {
         mapAssetsIn.set(input.assetInfo.assetGuid, { value: ext.BN_ZERO, zeroval: false })
       }
-      var assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid)
+      const assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid)
       assetAllocationValueIn.value = ext.add(assetAllocationValueIn.value, input.assetInfo.value)
       assetAllocationValueIn.zeroval = assetAllocationValueIn.zeroval || input.assetInfo.value.isZero()
       mapAssetsIn.set(input.assetInfo.assetGuid, assetAllocationValueIn)
@@ -58,7 +58,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       if (!mapAssetsOut.has(voutAsset.assetGuid)) {
         mapAssetsOut.set(voutAsset.assetGuid, { value: ext.BN_ZERO, zeroval: false })
       }
-      var assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid)
+      const assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid)
       assetAllocationValueOut.value = ext.add(assetAllocationValueOut.value, output.value)
       assetAllocationValueOut.zeroval = assetAllocationValueOut.zeroval || output.value.isZero()
       mapAssetsOut.set(voutAsset.assetGuid, assetAllocationValueOut)
@@ -130,9 +130,9 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
   utxoSys = utxoSys.concat().sort(function (a, b) {
     return ext.sub(utxoScore(b, feeRate), utxoScore(a, feeRate))
   })
-  var inputsCopy = inputs.slice(0)
+  const inputsCopy = inputs.slice(0)
   // attempt to use the blackjack strategy first (no change output)
-  var base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
+  const base = blackjack.blackjack(utxoSys, inputs, outputs, feeRate, assets, txVersion)
   if (base.inputs && base.inputs.length > 0) {
     if (!syncAllocationsWithInOut(assetAllocations, base.inputs, base.outputs, feeRate, txVersion, assets, assetMap)) {
       return {}
