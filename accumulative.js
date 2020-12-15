@@ -44,10 +44,10 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
 
-      if (assets && assets.has(utxo.assetInfo.assetGuid)) {
+      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(utxo.assetInfo.assetGuid)) {
         const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
-        if (utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)

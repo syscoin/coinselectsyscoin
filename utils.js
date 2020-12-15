@@ -19,6 +19,10 @@ function isAsset (txVersion) {
 function isAllocationBurn (txVersion) {
   return txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM
 }
+function isAssetAllocationTx (txVersion) {
+  return txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN || txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_SEND
+}
+
 // baseline estimates, used to improve performance
 const TX_BASE_SIZE = new BN(10)
 
@@ -178,6 +182,7 @@ module.exports = {
   isNonAssetFunded: isNonAssetFunded,
   isAsset: isAsset,
   isAllocationBurn: isAllocationBurn,
-  hasZeroVal: hasZeroVal
+  hasZeroVal: hasZeroVal,
+  isAssetAllocationTx: isAssetAllocationTx
 
 }
