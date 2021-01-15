@@ -57,7 +57,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   // get total output value from assetAllocations, not from outputs because outputs may have removed some outputs and redirected allocations to other outputs (ie burn sys to ethereum)
   assetAllocations.forEach(voutAsset => {
     voutAsset.values.forEach(output => {
-      const assetGuidStr = voutAsset.assetInfo.assetGuid.toString(10)
+      const assetGuidStr = voutAsset.assetGuid.toString(10)
       if (!mapAssetsOut.has(assetGuidStr)) {
         mapAssetsOut.set(assetGuidStr, { value: ext.BN_ZERO, zeroval: false })
       }
