@@ -44,8 +44,8 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
 
-      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(utxo.assetInfo.assetGuid.toString())) {
-        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid.toString())
+      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(utxo.assetInfo.assetGuid)) {
+        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid)
         // auxfee for this asset exists add another output
         if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
@@ -86,7 +86,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
   let auxfeeValue = ext.BN_ZERO
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = (assets && assets.get(assetGuid.toString())) || {}
+    const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
@@ -123,7 +123,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
     }
     // order by descending asset amounts for this asset guid
-    let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid.eq(assetGuid))
+    let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
     utxoAsset = utxoAsset.concat().sort(function (a, b) {
       return ext.sub(b.assetInfo.value, a.assetInfo.value)
     })
