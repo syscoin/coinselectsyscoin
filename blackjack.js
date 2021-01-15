@@ -39,8 +39,8 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
-      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(input.assetInfo.assetGuid.toString(10))) {
-        const utxoAssetObj = assets.get(input.assetInfo.assetGuid.toString(10))
+      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(input.assetInfo.assetGuid.toString())) {
+        const utxoAssetObj = assets.get(input.assetInfo.assetGuid.toString())
         // auxfee for this asset exists add another output
         if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
@@ -84,12 +84,12 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     if (!input.assetInfo) {
       continue
     }
-    mapAssetAmounts.set(input.assetInfo.assetGuid.toString(10) + '-' + input.assetInfo.value.toString(10), i)
+    mapAssetAmounts.set(input.assetInfo.assetGuid.toString() + '-' + input.assetInfo.value.toString(10), i)
   }
 
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = (assets && assets.get(assetGuid.toString(10))) || {}
+    const utxoAssetObj = (assets && assets.get(assetGuid.toString())) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
@@ -127,7 +127,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
     }
     // make sure if zero val is output, that zero val input is also added
-    const indexZeroVal = mapAssetAmounts.get(assetGuid.toString(10) + '-' + ext.BN_ZERO.toString(10))
+    const indexZeroVal = mapAssetAmounts.get(assetGuid.toString() + '-' + ext.BN_ZERO.toString(10))
     if (hasZeroVal && txVersion !== utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE) {
       if (indexZeroVal) {
         inputs.push(utxos[indexZeroVal])
@@ -138,7 +138,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
       }
     }
     // make sure total amount output exists
-    const index = mapAssetAmounts.get(assetGuid.toString(10) + '-' + assetOutAccum.toString(10))
+    const index = mapAssetAmounts.get(assetGuid.toString() + '-' + assetOutAccum.toString(10))
     // ensure every target for asset is satisfied otherwise we fail
     if (!funded && index) {
       inputs.push(utxos[index])

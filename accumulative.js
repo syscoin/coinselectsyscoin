@@ -44,8 +44,8 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
 
-      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(utxo.assetInfo.assetGuid.toString(10))) {
-        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid.toString(10))
+      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(utxo.assetInfo.assetGuid.toString())) {
+        const utxoAssetObj = assets.get(utxo.assetInfo.assetGuid.toString())
         // auxfee for this asset exists add another output
         if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
@@ -86,7 +86,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
   let auxfeeValue = ext.BN_ZERO
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = (assets && assets.get(assetGuid.toString(10))) || {}
+    const utxoAssetObj = (assets && assets.get(assetGuid.toString())) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
