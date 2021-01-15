@@ -2,6 +2,7 @@ const accumulative = require('./accumulative')
 const blackjack = require('./blackjack')
 const utils = require('./utils')
 const ext = require('./bn-extensions')
+const BN = require('bn.js')
 
 // order by descending value, minus the inputs approximate fee
 function utxoScore (x, feeRate) {
@@ -43,39 +44,42 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   const mapAssetsOut = new Map()
   inputs.forEach(input => {
     if (input.assetInfo) {
-      if (!mapAssetsIn.has(input.assetInfo.assetGuid.toString(10))) {
-        mapAssetsIn.set(input.assetInfo.assetGuid.toString(10), { value: ext.BN_ZERO, zeroval: false })
+      const assetGuidStr = input.assetInfo.assetGuid.toString(10)
+      if (!mapAssetsIn.has(assetGuidStr)) {
+        mapAssetsIn.set(assetGuidStr, { value: ext.BN_ZERO, zeroval: false })
       }
-      const assetAllocationValueIn = mapAssetsIn.get(input.assetInfo.assetGuid.toString(10))
+      const assetAllocationValueIn = mapAssetsIn.get(assetGuidStr)
       assetAllocationValueIn.value = ext.add(assetAllocationValueIn.value, input.assetInfo.value)
       assetAllocationValueIn.zeroval = assetAllocationValueIn.zeroval || input.assetInfo.value.isZero()
-      mapAssetsIn.set(input.assetInfo.assetGuid.toString(10), assetAllocationValueIn)
+      mapAssetsIn.set(assetGuidStr, assetAllocationValueIn)
     }
   })
   // get total output value from assetAllocations, not from outputs because outputs may have removed some outputs and redirected allocations to other outputs (ie burn sys to ethereum)
   assetAllocations.forEach(voutAsset => {
     voutAsset.values.forEach(output => {
-      if (!mapAssetsOut.has(voutAsset.assetGuid.toString(10))) {
-        mapAssetsOut.set(voutAsset.assetGuid.toString(10), { value: ext.BN_ZERO, zeroval: false })
+      const assetGuidStr = voutAsset.assetInfo.assetGuid.toString(10)
+      if (!mapAssetsOut.has(assetGuidStr)) {
+        mapAssetsOut.set(assetGuidStr, { value: ext.BN_ZERO, zeroval: false })
       }
-      const assetAllocationValueOut = mapAssetsOut.get(voutAsset.assetGuid.toString(10))
+      const assetAllocationValueOut = mapAssetsOut.get(assetGuidStr)
       assetAllocationValueOut.value = ext.add(assetAllocationValueOut.value, output.value)
       assetAllocationValueOut.zeroval = assetAllocationValueOut.zeroval || output.value.isZero()
-      mapAssetsOut.set(voutAsset.assetGuid.toString(10), assetAllocationValueOut)
+      mapAssetsOut.set(assetGuidStr, assetAllocationValueOut)
     })
   })
 
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
-    const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid.eq(assetGuid))
+    const assetGuidBN = new BN(assetGuid)
+    const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid.eq(assetGuidBN))
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
-    if (mapAssetsOut.has(assetGuid.toString(10))) {
-      const valueAssetOut = mapAssetsOut.get(assetGuid.toString(10))
+    if (mapAssetsOut.has(assetGuid)) {
+      const valueAssetOut = mapAssetsOut.get(assetGuid)
       let valueDiff = ext.sub(valueAssetIn.value, valueAssetOut.value)
       // for the types of tx which create outputs without inputs we want to ensure valueDiff doesn't go negative
       // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
       if (isAsset || isNonAssetFunded) {
-        if (assetMap.has(assetGuid.toString(10))) {
-          const valueOut = assetMap.get(assetGuid.toString(10))
+        if (assetMap.has(assetGuid)) {
+          const valueOut = assetMap.get(assetGuid)
           const accumOut = utils.sumOrNaN(valueOut.outputs)
           valueDiff = ext.add(valueDiff, accumOut)
         }
@@ -95,7 +99,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         console.log('syncAllocationsWithInOut: input not zero val but output does have zero val for asset guid: ' + assetGuid)
         return null
       }
-      const assetChangeOutputs = outputs.filter(output => (output.assetInfo !== undefined && output.assetInfo.assetGuid.eq(assetGuid) && output.assetChangeIndex !== undefined))
+      const assetChangeOutputs = outputs.filter(output => (output.assetInfo !== undefined && output.assetInfo.assetGuid.eq(assetGuidBN) && output.assetChangeIndex !== undefined))
       // if change output already exists just set new value otherwise create new output and allocation
       // also if input has zero val input but output does not, also create new output instead of just updating existing
       // zeroval outputs denote asset ownership (different than asset allocation ownership which are the tokens inside of the asset)
@@ -106,7 +110,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
       } else {
         assetAllocation.values.push({ n: outputs.length, value: valueDiff })
-        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuidBN, value: valueDiff }, value: dustAmount })
       }
     // asset does not exist in output, create it
     } else {
@@ -116,8 +120,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       }
       const valueDiff = valueAssetIn.value
       const utxoAssetObj = (assets && assets.get(assetGuid.toString(10))) || {}
-      const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
-      outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      const allocation = { assetGuid: assetGuidBN, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
+      outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuidBN, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
     }
   }

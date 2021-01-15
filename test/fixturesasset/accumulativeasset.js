@@ -6,9 +6,9 @@ module.exports = [{
   feeRate: new BN(10),
   txVersion: utils.SYSCOIN_TX_VERSION_ASSET_SEND,
   assetMap: new Map([
-    [new BN(1234), { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }] }],
-    [new BN(12345), { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }] }],
-    [new BN(12346), { changeAddress: 'changeAddr3', outputs: [{ value: new BN(10000), address: 'addr3' }] }]
+    ['1234', { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }] }],
+    ['12345', { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }] }],
+    ['12346', { changeAddress: 'changeAddr3', outputs: [{ value: new BN(10000), address: 'addr3' }] }]
   ]),
   utxos: [
     { value: new BN(102001) },
@@ -62,9 +62,9 @@ module.exports = [{
   feeRate: new BN(10),
   txVersion: utils.SYSCOIN_TX_VERSION_ASSET_SEND,
   assetMap: new Map([
-    [new BN(1234), { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }, { value: new BN(50), address: 'addr1a' }] }],
-    [new BN(12345), { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }, { value: new BN(100), address: 'addr2a' }, { value: new BN(10), address: 'addr2b' }] }],
-    [new BN(12346), { changeAddress: 'changeAddr3', outputs: [{ value: new BN(10000), address: 'addr3' }, { value: new BN(100000), address: 'addr3a' }] }]
+    ['1234', { changeAddress: 'changeAddr1', outputs: [{ value: new BN(100), address: 'addr1' }, { value: new BN(50), address: 'addr1a' }] }],
+    ['12345', { changeAddress: 'changeAddr2', outputs: [{ value: new BN(1000), address: 'addr2' }, { value: new BN(100), address: 'addr2a' }, { value: new BN(10), address: 'addr2b' }] }],
+    ['12346', { changeAddress: 'changeAddr3', outputs: [{ value: new BN(10000), address: 'addr3' }, { value: new BN(100000), address: 'addr3a' }] }]
   ]),
   utxos: [
     { value: new BN(102001) },
