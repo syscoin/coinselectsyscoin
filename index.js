@@ -66,6 +66,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
   })
 
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
+    const baseAssetID = utils.getBaseAssetID(assetGuid)
     const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
@@ -74,7 +75,11 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       // for the types of tx which create outputs without inputs we want to ensure valueDiff doesn't go negative
       // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
       if (isAsset || isNonAssetFunded) {
-        if (assetMap.has(assetGuid)) {
+        if (assetMap.has(baseAssetID)) {
+          const valueOut = assetMap.get(baseAssetID)
+          const accumOut = utils.sumOrNaN(valueOut.outputs)
+          valueDiff = ext.add(valueDiff, accumOut)
+        } else if (baseAssetID !== assetGuid && assetMap.has(assetGuid)) {
           const valueOut = assetMap.get(assetGuid)
           const accumOut = utils.sumOrNaN(valueOut.outputs)
           valueDiff = ext.add(valueDiff, accumOut)
@@ -114,8 +119,9 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         console.log('syncAllocationsWithInOut: inconsistency related to outputs with NO asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
+      const baseAssetID = utils.getBaseAssetID(assetGuid)
       const valueDiff = valueAssetIn.value
-      const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
+      const utxoAssetObj = (assets && assets.get(baseAssetID)) || {}
       const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
       outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)

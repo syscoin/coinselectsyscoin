@@ -160,6 +160,16 @@ function getAuxFee (auxfeedetails, nAmount) {
   }
   return new BN((nAmount - nBoundAmount) * nRate + nAccumulatedFee)
 }
+
+function createAssetID (NFTID, assetGuid) {
+  const BN_ASSET = new BN(NFTID || 0).shln(32).or(new BN(assetGuid))
+  return BN_ASSET.toString(10)
+}
+
+function getBaseAssetID (assetGuid) {
+  return new BN(assetGuid).and(new BN(0xFFFFFFFF)).toString(10)
+}
+
 module.exports = {
   dustThreshold: dustThreshold,
   finalize: finalize,
@@ -183,6 +193,8 @@ module.exports = {
   isAsset: isAsset,
   isAllocationBurn: isAllocationBurn,
   hasZeroVal: hasZeroVal,
-  isAssetAllocationTx: isAssetAllocationTx
+  isAssetAllocationTx: isAssetAllocationTx,
+  createAssetID: createAssetID,
+  getBaseAssetID: getBaseAssetID
 
 }

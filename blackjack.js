@@ -30,6 +30,7 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
     inputs.push(input)
     // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
     if (input.assetInfo) {
+      const baseAssetID = utils.getBaseAssetID(input.assetInfo.assetGuid)
       outAccum = ext.add(outAccum, dustAmount)
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       // double up to be safe
@@ -39,8 +40,8 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, utils.outputBytes({ type: 'BECH32' }))
       fee = ext.mul(feeRate, bytesAccum)
-      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(input.assetInfo.assetGuid)) {
-        const utxoAssetObj = assets.get(input.assetInfo.assetGuid)
+      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(baseAssetID)) {
+        const utxoAssetObj = assets.get(baseAssetID)
         // auxfee for this asset exists add another output
         if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
@@ -88,8 +89,9 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   }
 
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
-  for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const utxoAssetObj = (assets && assets.get(assetGuid)) || {}
+  for (const [baseAssetID, valueAssetObj] of assetMap.entries()) {
+    const assetGuid = utils.createAssetID(valueAssetObj.NFTID, baseAssetID)
+    const utxoAssetObj = (assets && assets.get(baseAssetID)) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
