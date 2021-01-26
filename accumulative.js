@@ -6,7 +6,7 @@ const BN = require('bn.js')
 function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
   if (!utils.uintOrNull(feeRate)) return {}
   const changeOutputBytes = utils.outputBytes({})
-  let feeBytes = new BN(changeOutputBytes)
+  let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)

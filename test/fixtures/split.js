@@ -58,13 +58,13 @@ module.exports = [{
     }
     ],
     outputs: [{
-      value: new BN(20910)
+      value: new BN(20930)
     },
     {
-      value: new BN(20910)
+      value: new BN(20930)
     }
     ],
-    fee: new BN(8180)
+    fee: new BN(8140)
   }
 },
 {
@@ -88,9 +88,9 @@ module.exports = [{
     }
     ],
     outputs: [{
-      value: new BN(25120)
+      value: new BN(25140)
     }],
-    fee: new BN(4880)
+    fee: new BN(4860)
   }
 },
 {
@@ -127,13 +127,13 @@ module.exports = [{
     },
     {
       address: 'fizzbuzz',
-      value: new BN(6220)
+      value: new BN(6230)
     },
     {
-      value: new BN(6220)
+      value: new BN(6230)
     }
     ],
-    fee: new BN(5560)
+    fee: new BN(5540)
   }
 },
 {
@@ -145,7 +145,7 @@ module.exports = [{
   ],
   outputs: [],
   expected: {
-    fee: new BN(3060)
+    fee: new BN(3050)
   }
 },
 {
@@ -156,7 +156,7 @@ module.exports = [{
     {}
   ],
   expected: {
-    fee: new BN(780)
+    fee: new BN(790)
   }
 },
 {

@@ -24,12 +24,12 @@ function isAssetAllocationTx (txVersion) {
 }
 
 // baseline estimates, used to improve performance
-const TX_BASE_SIZE = new BN(10)
+const TX_BASE_SIZE = new BN(11)
 
 const TX_INPUT_SIZE = {
-  LEGACY: new BN(148),
-  P2SH: new BN(92),
-  BECH32: new BN(69)
+  LEGACY: new BN(147),
+  P2SH: new BN(91),
+  BECH32: new BN(68)
 }
 
 const TX_OUTPUT_SIZE = {
@@ -44,7 +44,7 @@ function inputBytes (input) {
 
 function outputBytes (output) {
   if (output.script) {
-    return new BN(output.script.length + 8) // 8 for amount
+    return new BN(output.script.length + 5 + 8) // 5 for OP_PUSHDATA2 max OP_RETURN prefix, 8 for amount
   }
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }

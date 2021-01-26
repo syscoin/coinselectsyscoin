@@ -39,10 +39,10 @@ module.exports = [{
     },
     {
       changeIndex: 1,
-      value: new BN(4871)
+      value: new BN(4851)
     }
     ],
-    fee: new BN(1130)
+    fee: new BN(1150)
   }
 },
 {
@@ -110,10 +110,10 @@ module.exports = [{
     },
     {
       changeIndex: 1,
-      value: new BN(34170)
+      value: new BN(34150)
     }
     ],
-    fee: new BN(1130)
+    fee: new BN(1150)
   }
 },
 {
@@ -300,10 +300,10 @@ module.exports = [{
     },
     {
       changeIndex: 4,
-      value: new BN(1981)
+      value: new BN(1961)
     }
     ],
-    fee: new BN(6240)
+    fee: new BN(6260)
   }
 },
 {
@@ -391,9 +391,9 @@ module.exports = [{
     }],
     outputs: [{
       changeIndex: 0,
-      value: new BN(18080)
+      value: new BN(18040)
     }],
-    fee: new BN(1920)
+    fee: new BN(1960)
   }
 },
 {
@@ -428,7 +428,7 @@ module.exports = [{
   inputs: [],
   outputs: [],
   expected: {
-    fee: new BN(100)
+    fee: new BN(110)
   }
 },
 {
@@ -467,7 +467,7 @@ module.exports = [{
     new BN(1)
   ],
   expected: {
-    fee: new BN(9960)
+    fee: new BN(9970)
   }
 },
 {

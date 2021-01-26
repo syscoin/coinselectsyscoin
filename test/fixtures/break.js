@@ -224,7 +224,7 @@ module.exports = [{
   ],
   output: new BN(40000),
   expected: {
-    fee: new BN(3400)
+    fee: new BN(3390)
   }
 },
 {
@@ -233,7 +233,7 @@ module.exports = [{
   inputs: [],
   output: new BN(2000),
   expected: {
-    fee: new BN(440)
+    fee: new BN(450)
   }
 },
 {
@@ -242,7 +242,7 @@ module.exports = [{
   inputs: [],
   output: {},
   expected: {
-    fee: new BN(100)
+    fee: new BN(110)
   }
 },
 {

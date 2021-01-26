@@ -12,26 +12,26 @@ module.exports = [{
   ]),
   utxos: [
     { value: new BN(102001) },
-    { assetInfo: { assetGuid: '1234', value: new BN(100) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '12345', value: new BN(1000) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '12346', value: new BN(10000) }, value: new BN(690) }
+    { assetInfo: { assetGuid: '1234', value: new BN(100) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '12345', value: new BN(1000) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '12346', value: new BN(10000) }, value: new BN(680) }
   ],
   expected: {
     inputs: [
       {
         i: 1,
         assetInfo: { assetGuid: '1234', value: new BN(100) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 2,
         assetInfo: { assetGuid: '12345', value: new BN(1000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 3,
         assetInfo: { assetGuid: '12346', value: new BN(10000) },
-        value: new BN(690)
+        value: new BN(680)
       }],
     outputs: [
       {
@@ -39,21 +39,21 @@ module.exports = [{
         address: 'addr1',
         type: 'BECH32',
         assetInfo: { assetGuid: '1234', value: new BN(100) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr2',
         type: 'BECH32',
         assetInfo: { assetGuid: '12345', value: new BN(1000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr3',
         type: 'BECH32',
         assetInfo: { assetGuid: '12346', value: new BN(10000) },
-        value: new BN(690)
+        value: new BN(680)
       }]
   }
 },
@@ -68,45 +68,45 @@ module.exports = [{
   ]),
   utxos: [
     { value: new BN(102001) },
-    { assetInfo: { assetGuid: '1234', value: new BN(10) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '1234', value: new BN(100) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '1234', value: new BN(25) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '1234', value: new BN(35) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '12345', value: new BN(2000) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '12346', value: new BN(10000) }, value: new BN(690) },
-    { assetInfo: { assetGuid: '12346', value: new BN(100000) }, value: new BN(690) }
+    { assetInfo: { assetGuid: '1234', value: new BN(10) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '1234', value: new BN(100) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '1234', value: new BN(25) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '1234', value: new BN(35) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '12345', value: new BN(2000) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '12346', value: new BN(10000) }, value: new BN(680) },
+    { assetInfo: { assetGuid: '12346', value: new BN(100000) }, value: new BN(680) }
   ],
   expected: {
     inputs: [
       {
         i: 2,
         assetInfo: { assetGuid: '1234', value: new BN(100) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 4,
         assetInfo: { assetGuid: '1234', value: new BN(35) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 3,
         assetInfo: { assetGuid: '1234', value: new BN(25) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 5,
         assetInfo: { assetGuid: '12345', value: new BN(2000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 7,
         assetInfo: { assetGuid: '12346', value: new BN(100000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
         i: 6,
         assetInfo: { assetGuid: '12346', value: new BN(10000) },
-        value: new BN(690)
+        value: new BN(680)
       }],
     outputs: [
       {
@@ -114,63 +114,63 @@ module.exports = [{
         address: 'addr1',
         type: 'BECH32',
         assetInfo: { assetGuid: '1234', value: new BN(100) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr1a',
         type: 'BECH32',
         assetInfo: { assetGuid: '1234', value: new BN(50) },
-        value: new BN(690)
+        value: new BN(680)
       },
       // changeAddr1
       {
         assetChangeIndex: 2,
         type: 'BECH32',
         assetInfo: { assetGuid: '1234', value: new BN(10) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr2',
         type: 'BECH32',
         assetInfo: { assetGuid: '12345', value: new BN(1000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr2a',
         type: 'BECH32',
         assetInfo: { assetGuid: '12345', value: new BN(100) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr2b',
         type: 'BECH32',
         assetInfo: { assetGuid: '12345', value: new BN(10) },
-        value: new BN(690)
+        value: new BN(680)
       },
       // changeAddr2
       {
         assetChangeIndex: 3,
         type: 'BECH32',
         assetInfo: { assetGuid: '12345', value: new BN(890) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr3',
         type: 'BECH32',
         assetInfo: { assetGuid: '12346', value: new BN(10000) },
-        value: new BN(690)
+        value: new BN(680)
       },
       {
 
         address: 'addr3a',
         type: 'BECH32',
         assetInfo: { assetGuid: '12346', value: new BN(100000) },
-        value: new BN(690)
+        value: new BN(680)
       }]
   }
 }
