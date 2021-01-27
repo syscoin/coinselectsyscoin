@@ -64,9 +64,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       mapAssetsOut.set(voutAsset.assetGuid, assetAllocationValueOut)
     })
   })
-
   for (const [assetGuid, valueAssetIn] of mapAssetsIn.entries()) {
-    const baseAssetID = utils.getBaseAssetID(assetGuid)
     const assetAllocation = assetAllocations.find(voutAsset => voutAsset.assetGuid === assetGuid)
     // if we have outputs for this asset we need to either update them (if change exists) or create new output for that asset change
     if (mapAssetsOut.has(assetGuid)) {
@@ -75,11 +73,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       // for the types of tx which create outputs without inputs we want to ensure valueDiff doesn't go negative
       // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
       if (isAsset || isNonAssetFunded) {
-        if (assetMap.has(baseAssetID)) {
-          const valueOut = assetMap.get(baseAssetID)
-          const accumOut = utils.sumOrNaN(valueOut.outputs)
-          valueDiff = ext.add(valueDiff, accumOut)
-        } else if (baseAssetID !== assetGuid && assetMap.has(assetGuid)) {
+        if (assetMap.has(assetGuid)) {
           const valueOut = assetMap.get(assetGuid)
           const accumOut = utils.sumOrNaN(valueOut.outputs)
           valueDiff = ext.add(valueDiff, accumOut)

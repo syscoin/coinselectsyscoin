@@ -89,8 +89,8 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
   }
 
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
-  for (const [baseAssetID, valueAssetObj] of assetMap.entries()) {
-    const assetGuid = utils.createAssetID(valueAssetObj.NFTID, baseAssetID)
+  for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
+    const baseAssetID = utils.getBaseAssetID(assetGuid)
     const utxoAssetObj = (assets && assets.get(baseAssetID)) || {}
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
@@ -116,40 +116,27 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
     })
-    // if not expecting asset to be funded, we just want outputs then return here without inputs
-    if (isNonAssetFunded) {
-      assetAllocations.push(assetAllocation)
-      return utils.finalizeAssets(inputs, outputs, assetAllocations)
-    }
-    let funded = false
-    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
-    const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
-    // if auxfee exists add total output for asset with auxfee so change is calculated properly
-    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
-      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
-    }
-    // make sure if zero val is output, that zero val input is also added
-    const indexZeroVal = mapAssetAmounts.get(assetGuid + '-' + ext.BN_ZERO.toString(10))
-    if (hasZeroVal && txVersion !== utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE) {
-      if (indexZeroVal) {
-        inputs.push(utxos[indexZeroVal])
+    if (!isNonAssetFunded) {
+      let funded = false
+      let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+      // if auxfee exists add total output for asset with auxfee so change is calculated properly
+      if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
+        assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
       }
-      // if the required amount has filled because its 0, we've just added 0 we can exit right here
-      if (assetOutAccum.isZero()) {
+      // make sure total amount output exists
+      const index = mapAssetAmounts.get(assetGuid + '-' + assetOutAccum.toString(10))
+      // ensure every target for asset is satisfied otherwise we fail
+      if (!funded && index) {
+        inputs.push(utxos[index])
         funded = true
       }
-    }
-    // make sure total amount output exists
-    const index = mapAssetAmounts.get(assetGuid + '-' + assetOutAccum.toString(10))
-    // ensure every target for asset is satisfied otherwise we fail
-    if (!funded && index) {
-      inputs.push(utxos[index])
-      funded = true
-    }
-    assetAllocations.push(assetAllocation)
-    // shortcut when we know an asset spend is not funded
-    if (!funded) {
-      return utils.finalizeAssets(null, null, null, null, null)
+      assetAllocations.push(assetAllocation)
+      // shortcut when we know an asset spend is not funded
+      if (!funded) {
+        return utils.finalizeAssets(null, null, null, null, null)
+      }
+    } else {
+      assetAllocations.push(assetAllocation)
     }
   }
   return utils.finalizeAssets(inputs, outputs, assetAllocations)
