@@ -116,13 +116,25 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
     })
-    if (!isNonAssetFunded) {
-      let funded = false
-      let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
-      // if auxfee exists add total output for asset with auxfee so change is calculated properly
-      if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
-        assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    let funded = txVersion === utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
+    // if auxfee exists add total output for asset with auxfee so change is calculated properly
+    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
+      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    }
+    // make sure if zero val is output, that zero val input is also added
+    const indexZeroVal = mapAssetAmounts.get(assetGuid + '-' + ext.BN_ZERO.toString(10))
+    if (hasZeroVal && !funded) {
+      if (indexZeroVal) {
+        inputs.push(utxos[indexZeroVal])
       }
+      // if the required amount has filled because its 0, we've just added 0 we can exit right here
+      if (assetOutAccum.isZero()) {
+        funded = true
+      }
+    }
+    if (!isNonAssetFunded) {
       // make sure total amount output exists
       const index = mapAssetAmounts.get(assetGuid + '-' + assetOutAccum.toString(10))
       // ensure every target for asset is satisfied otherwise we fail

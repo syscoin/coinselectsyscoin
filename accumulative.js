@@ -113,13 +113,41 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
     })
-    if (!isNonAssetFunded) {
-      let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
-      const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
-      // if auxfee exists add total output for asset with auxfee so change is calculated properly
-      if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
-        assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
+    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
+    // if auxfee exists add total output for asset with auxfee so change is calculated properly
+    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
+      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
+    }
+    // order by descending asset amounts for this asset guid
+    let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
+    utxoAsset = utxoAsset.concat().sort(function (a, b) {
+      return ext.sub(b.assetInfo.value, a.assetInfo.value)
+    })
+    let funded = txVersion === utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE
+    // look for zero val input if zero val output exists
+    if (hasZeroVal && !funded) {
+      let foundZeroVal = false
+      for (let i = utxoAsset.length - 1; i >= 0; i--) {
+        const utxo = utxoAsset[i]
+        const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
+        if (!utxoValue.isZero()) {
+          continue
+        }
+        inputs.push(utxo)
+        foundZeroVal = true
+        // if requested output was 0 then we should be done
+        if (assetOutAccum.isZero()) {
+          funded = true
+        }
+        break
       }
+      if (!foundZeroVal) {
+        return utils.finalizeAssets(null, null, null, null, null)
+      }
+    }
+
+    if (!funded && !isNonAssetFunded) {
       // order by descending asset amounts for this asset guid
       let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
       utxoAsset = utxoAsset.concat().sort(function (a, b) {
