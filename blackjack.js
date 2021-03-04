@@ -3,10 +3,14 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
-function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion) {
+function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize) {
   if (!utils.uintOrNull(feeRate)) return {}
   const changeOutputBytes = utils.outputBytes({})
-  let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
+  let memoPadding = 0
+  if (memoSize) {
+    memoPadding = memoSize + 4
+  }
+  let feeBytes = new BN(changeOutputBytes.toNumber() + 4 + memoPadding)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)

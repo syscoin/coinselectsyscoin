@@ -3,10 +3,14 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion) {
+function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize) {
   if (!utils.uintOrNull(feeRate)) return {}
   const changeOutputBytes = utils.outputBytes({})
-  let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
+  let memoPadding = 0
+  if (memoSize) {
+    memoPadding = memoSize + 4
+  }
+  let feeBytes = new BN(changeOutputBytes.toNumber() + 4 + memoPadding)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)
