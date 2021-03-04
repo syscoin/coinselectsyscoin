@@ -73,7 +73,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       // for the types of tx which create outputs without inputs we want to ensure valueDiff doesn't go negative
       // and account for inputs and outputs properly (discounting the amount requested in assetsMap)
       if (isAsset || isNonAssetFunded) {
-        if (assetMap.has(assetGuid)) {
+        if (assetMap && assetMap.has(assetGuid)) {
           const valueOut = assetMap.get(assetGuid)
           const accumOut = utils.sumOrNaN(valueOut.outputs)
           valueDiff = ext.add(valueDiff, accumOut)

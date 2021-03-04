@@ -8,12 +8,15 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
   if (memoSize) {
-    memoPadding = memoSize + 4
+    memoPadding = memoSize + 5 + 8 // opreturn overhead + memo size + amount int64
   }
-  let feeBytes = new BN(changeOutputBytes.toNumber() + 4 + memoPadding)
+  let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)
+  const memBytes = new BN(memoPadding)
+  bytesAccum = ext.add(bytesAccum, memBytes)
+  feeBytes = ext.add(feeBytes, memBytes)
   let fee = ext.mul(feeRate, bytesAccum)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
