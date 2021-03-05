@@ -110,8 +110,10 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
         })
         // get auxfee based on auxfee table and total amount sending
         auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
-        assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-        outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+        if (auxfeeValue.gt(ext.BN_ZERO)) {
+          assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
+          outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+        }
       }
     }
     valueAssetObj.outputs.forEach(output => {

@@ -142,11 +142,15 @@ function getAuxFee (auxfeedetails, nAmount) {
   for (let i = 0; i < auxfeedetails.auxfees.length; i++) {
     const fee = auxfeedetails.auxfees[i]
     const feeNext = auxfeedetails.auxfees[i < auxfeedetails.auxfees.length - 1 ? i + 1 : i]
-    nBoundAmount = fee.bound
+    nBoundAmount = fee.bound || 0
     nNextBoundAmount = feeNext.bound
 
     // max uint16 (65535 = 0.65535 = 65.5535%)
-    nRate = fee.percent / 100000.0
+    if (fee.percent) {
+      nRate = fee.percent / 100000.0
+    } else {
+      nRate = 0
+    }
     // case where amount is in between the bounds
     if (nAmount >= nBoundAmount && nAmount < nNextBoundAmount) {
       break
