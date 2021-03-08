@@ -109,7 +109,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
         if (auxfeeValue.gt(ext.BN_ZERO)) {
           assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-          outputs.push({ address: utxoAssetObj.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
+          outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
         }
       }
     }
