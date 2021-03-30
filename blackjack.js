@@ -50,7 +50,7 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize
       if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(baseAssetID)) {
         const utxoAssetObj = assets.get(baseAssetID)
         // auxfee for this asset exists add another output
-        if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+        if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && baseAssetID === input.assetInfo.assetGuid && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
           outAccum = ext.add(outAccum, dustAmount)
           bytesAccum = ext.add(bytesAccum, changeOutputBytes)
           feeBytes = ext.add(feeBytes, changeOutputBytes)
@@ -102,7 +102,7 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion, assets) {
     const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
     if (!isAsset) {
       // auxfee is set and its an allocation send
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
+      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && baseAssetID === assetGuid && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
         let totalAssetValue = ext.BN_ZERO
         // find total amount for this asset from assetMap
         valueAssetObj.outputs.forEach(output => {
