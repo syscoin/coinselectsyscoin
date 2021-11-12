@@ -13,7 +13,7 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoS
   let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
-  let outAccum = utils.sumOrNaN(outputs, txVersion)
+  let outAccum = utils.sumOrNaN(outputs)
   let fee = ext.mul(feeRate, bytesAccum)
   const memBytes = new BN(memoPadding)
   bytesAccum = ext.add(bytesAccum, memBytes)
