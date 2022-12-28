@@ -3,20 +3,25 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
-function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize) {
+function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize, blobSize) {
   if (!utils.uintOrNull(feeRate)) return {}
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
   if (memoSize) {
     memoPadding = memoSize + 5 + 8 // opreturn overhead + memo size + amount int64
   }
+  blobSize = blobSize || 0
   let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)
   const memBytes = new BN(memoPadding)
+  let blobBytes = new BN(blobSize)
+  // factor blobs by 100x in fee market
+  blobBytes = ext.mul(blobBytes, new BN(0.01))
   bytesAccum = ext.add(bytesAccum, memBytes)
   feeBytes = ext.add(feeBytes, memBytes)
+  feeBytes = ext.add(feeBytes, blobBytes)
   let fee = ext.mul(feeRate, bytesAccum)
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
