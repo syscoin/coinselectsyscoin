@@ -23,11 +23,19 @@ function blackjack (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize
   feeBytes = ext.add(feeBytes, memBytes)
   feeBytes = ext.add(feeBytes, blobBytes)
   let fee = ext.mul(feeRate, bytesAccum)
+  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  if (blobSize) {
+    outAccum = ext.add(outAccum, dustAmount)
+    bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+    feeBytes = ext.add(feeBytes, changeOutputBytes)
+    // double up to be safe
+    bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+    feeBytes = ext.add(feeBytes, changeOutputBytes)
+  }
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
 
   const threshold = utils.dustThreshold({}, feeRate)
-  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   for (let i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     const inputBytes = utils.inputBytes(input)

@@ -24,6 +24,14 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoS
   feeBytes = ext.add(feeBytes, memBytes)
   feeBytes = ext.add(feeBytes, blobBytes)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  if (blobSize) {
+    outAccum = ext.add(outAccum, dustAmount)
+    bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+    feeBytes = ext.add(feeBytes, changeOutputBytes)
+    // double up to be safe
+    bytesAccum = ext.add(bytesAccum, changeOutputBytes)
+    feeBytes = ext.add(feeBytes, changeOutputBytes)
+  }
   // is already enough input?
   if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
   for (let i = 0; i < utxos.length; i++) {
