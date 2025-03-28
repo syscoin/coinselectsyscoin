@@ -81,6 +81,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       if (valueDiff.isNeg()) {
         console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut.value + ' Input: ' + valueAssetIn.value)
         return null
+      } else if(valueDiff.eq(ext.BN_ZERO)) {
+        continue
       }
       if (assetAllocation === undefined) {
         console.log('syncAllocationsWithInOut: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
