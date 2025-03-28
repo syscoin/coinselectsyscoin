@@ -3,7 +3,7 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoSize, blobSize) {
+function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
   if (!utils.uintOrNull(feeRate)) return {}
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
@@ -53,7 +53,6 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoS
     inputs.push(utxo)
     // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
     if (utxo.assetInfo) {
-      const baseAssetID = utils.getBaseAssetID(utxo.assetInfo.assetGuid)
       outAccum = ext.add(outAccum, dustAmount)
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
@@ -64,26 +63,6 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoS
       // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
       bytesAccum = ext.add(bytesAccum, changeOutputBytes)
       feeBytes = ext.add(feeBytes, changeOutputBytes)
-
-      if (utils.isAssetAllocationTx(txVersion) && assets && assets.has(baseAssetID)) {
-        const utxoAssetObj = assets.get(baseAssetID)
-        // auxfee for this asset exists add another output
-        if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && baseAssetID === utxo.assetInfo.assetGuid && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
-          outAccum = ext.add(outAccum, dustAmount)
-          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
-          feeBytes = ext.add(feeBytes, changeOutputBytes)
-          // add another bech32 output for OP_RETURN overhead
-          // any extra data should be optimized out later as OP_RETURN is serialized and fees are optimized
-          bytesAccum = ext.add(bytesAccum, changeOutputBytes)
-          feeBytes = ext.add(feeBytes, changeOutputBytes)
-        }
-        // add bytes and fees for notary signature
-        if (utxoAssetObj.notarykeyid && utxoAssetObj.notarykeyid.length > 0) {
-          const sigBytes = new BN(65)
-          bytesAccum = ext.add(bytesAccum, sigBytes)
-          feeBytes = ext.add(feeBytes, sigBytes)
-        }
-      }
     }
 
     fee = ext.mul(feeRate, bytesAccum)
@@ -96,36 +75,17 @@ function accumulative (utxos, inputs, outputs, feeRate, assets, txVersion, memoS
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
   if (!utils.uintOrNull(feeRate)) return {}
-  const isAsset = utils.isAsset(txVersion)
-  const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const assetAllocations = []
   const outputs = []
   const inputs = []
-  let auxfeeValue = ext.BN_ZERO
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const baseAssetID = utils.getBaseAssetID(assetGuid)
-    const utxoAssetObj = (assets && assets.get(baseAssetID)) || {}
-    const assetAllocation = { assetGuid: assetGuid, values: [], notarysig: utxoAssetObj.notarysig || Buffer.from('') }
-    if (!isAsset) {
-      // auxfee is set and its an allocation send and its not an NFT
-      if (txVersion === utils.SYSCOIN_TX_VERSION_ALLOCATION_SEND && baseAssetID === assetGuid && utxoAssetObj.auxfeedetails && utxoAssetObj.auxfeedetails.auxfeeaddress && utxoAssetObj.auxfeedetails.auxfees && utxoAssetObj.auxfeedetails.auxfees.length > 0) {
-        let totalAssetValue = ext.BN_ZERO
-        // find total amount for this asset from assetMap
-        valueAssetObj.outputs.forEach(output => {
-          totalAssetValue = ext.add(totalAssetValue, output.value)
-        })
-        // get auxfee based on auxfee table and total amount sending
-        auxfeeValue = utils.getAuxFee(utxoAssetObj.auxfeedetails, totalAssetValue)
-        if (auxfeeValue.gt(ext.BN_ZERO)) {
-          assetAllocation.values.push({ n: outputs.length, value: auxfeeValue })
-          outputs.push({ address: utxoAssetObj.auxfeedetails.auxfeeaddress, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: auxfeeValue }, value: dustAmount })
-        }
-      }
-    }
+    const assetAllocation = { assetGuid: assetGuid, values: [] }
+
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
@@ -135,41 +95,14 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
         outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
       }
     })
-    const hasZeroVal = utils.hasZeroVal(valueAssetObj.outputs)
-    let assetOutAccum = isAsset ? ext.BN_ZERO : utils.sumOrNaN(valueAssetObj.outputs)
-    // if auxfee exists add total output for asset with auxfee so change is calculated properly
-    if (!ext.eq(auxfeeValue, ext.BN_ZERO)) {
-      assetOutAccum = ext.add(assetOutAccum, auxfeeValue)
-    }
     // order by descending asset amounts for this asset guid
     let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
     utxoAsset = utxoAsset.concat().sort(function (a, b) {
       return ext.sub(b.assetInfo.value, a.assetInfo.value)
     })
-    let funded = txVersion === utils.SYSCOIN_TX_VERSION_ASSET_ACTIVATE
-    // look for zero val input if zero val output exists
-    if (hasZeroVal && !funded) {
-      let foundZeroVal = false
-      for (let i = utxoAsset.length - 1; i >= 0; i--) {
-        const utxo = utxoAsset[i]
-        const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
-        if (!utxoValue.isZero()) {
-          continue
-        }
-        inputs.push(utxo)
-        foundZeroVal = true
-        // if requested output was 0 then we should be done
-        if (assetOutAccum.isZero()) {
-          funded = true
-        }
-        break
-      }
-      if (!foundZeroVal) {
-        return utils.finalizeAssets(null, null, null, null, null)
-      }
-    }
 
-    if (!funded && !isNonAssetFunded) {
+    if (!isNonAssetFunded) {
+      const assetOutAccum = utils.sumOrNaN(valueAssetObj.outputs)
       // order by descending asset amounts for this asset guid
       let utxoAsset = utxoAssets.filter(utxo => utxo.assetInfo.assetGuid === assetGuid)
       utxoAsset = utxoAsset.concat().sort(function (a, b) {
@@ -179,10 +112,6 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, assets) {
       for (let i = 0; i < utxoAsset.length; i++) {
         const utxo = utxoAsset[i]
         const utxoValue = utils.uintOrNull(utxo.assetInfo.value)
-        // if not funding asset new/update/send, we should fund with non-zero asset utxo amounts only
-        if (!hasZeroVal && utxoValue.isZero()) {
-          continue
-        }
         inAccum = ext.add(inAccum, utxoValue)
         inputs.push(utxo)
         // deal with change

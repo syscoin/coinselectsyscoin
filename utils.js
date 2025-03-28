@@ -1,26 +1,10 @@
 const BN = require('bn.js')
 const ext = require('./bn-extensions')
-const SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN = 128
-const SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION = 129
-const SYSCOIN_TX_VERSION_ASSET_ACTIVATE = 130
-const SYSCOIN_TX_VERSION_ASSET_UPDATE = 131
-const SYSCOIN_TX_VERSION_ASSET_SEND = 132
-const SYSCOIN_TX_VERSION_ALLOCATION_MINT = 133
-const SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM = 134
-const SYSCOIN_TX_VERSION_ALLOCATION_SEND = 135
+const SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION = 139
+const SYSCOIN_TX_VERSION_ALLOCATION_MINT = 140
 function isNonAssetFunded (txVersion) {
-  return txVersion === SYSCOIN_TX_VERSION_ASSET_SEND || txVersion === SYSCOIN_TX_VERSION_ASSET_ACTIVATE || txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_MINT
+  return txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_MINT
 }
-function isAsset (txVersion) {
-  return txVersion === SYSCOIN_TX_VERSION_ASSET_ACTIVATE || txVersion === SYSCOIN_TX_VERSION_ASSET_UPDATE || txVersion === SYSCOIN_TX_VERSION_ASSET_SEND
-}
-function isAllocationBurn (txVersion) {
-  return txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM
-}
-function isAssetAllocationTx (txVersion) {
-  return txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN || txVersion === SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION || txVersion === SYSCOIN_TX_VERSION_ALLOCATION_SEND
-}
-
 // baseline estimates, used to improve performance
 const TX_BASE_SIZE = new BN(11)
 
@@ -76,18 +60,11 @@ function sumForgiving (range) {
   ext.BN_ZERO)
 }
 
-function sumOrNaN (range, txVersion) {
+function sumOrNaN (range) {
   return range.reduce(function (a, x) {
     const value = x.value
     return ext.add(a, uintOrNull(value))
   }, ext.BN_ZERO)
-}
-
-function hasZeroVal (range) {
-  for (let i = 0; i < range.length; i++) {
-    if (range[i].value.isZero()) { return true }
-  }
-  return false
 }
 
 function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
@@ -125,46 +102,6 @@ function finalizeAssets (inputs, outputs, assetAllocations) {
   }
 }
 
-function getAuxFee (auxfeedetails, nAmount) {
-  let nAccumulatedFee = 0
-  let nBoundAmount = 0
-  let nNextBoundAmount = 0
-  let nRate = 0
-  for (let i = 0; i < auxfeedetails.auxfees.length; i++) {
-    const fee = auxfeedetails.auxfees[i]
-    const feeNext = auxfeedetails.auxfees[i < auxfeedetails.auxfees.length - 1 ? i + 1 : i]
-    nBoundAmount = fee.bound || 0
-    nNextBoundAmount = feeNext.bound
-
-    // max uint16 (65535 = 0.65535 = 65.5535%)
-    if (fee.percent) {
-      nRate = fee.percent / 100000.0
-    } else {
-      nRate = 0
-    }
-    // case where amount is in between the bounds
-    if (nAmount >= nBoundAmount && nAmount < nNextBoundAmount) {
-      break
-    }
-    nBoundAmount = nNextBoundAmount - nBoundAmount
-    // must be last bound
-    if (nBoundAmount <= 0) {
-      return new BN((nAmount - nNextBoundAmount) * nRate + nAccumulatedFee)
-    }
-    nAccumulatedFee += (nBoundAmount * nRate)
-  }
-  return new BN((nAmount - nBoundAmount) * nRate + nAccumulatedFee)
-}
-
-function createAssetID (NFTID, assetGuid) {
-  const BN_ASSET = new BN(NFTID || 0).shln(32).or(new BN(assetGuid))
-  return BN_ASSET.toString(10)
-}
-
-function getBaseAssetID (assetGuid) {
-  return new BN(assetGuid).and(new BN(0xFFFFFFFF)).toString(10)
-}
-
 module.exports = {
   dustThreshold: dustThreshold,
   finalize: finalize,
@@ -175,21 +112,5 @@ module.exports = {
   sumForgiving: sumForgiving,
   transactionBytes: transactionBytes,
   uintOrNull: uintOrNull,
-  getAuxFee: getAuxFee,
-  SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN: SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_SYSCOIN,
-  SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION: SYSCOIN_TX_VERSION_SYSCOIN_BURN_TO_ALLOCATION,
-  SYSCOIN_TX_VERSION_ASSET_ACTIVATE: SYSCOIN_TX_VERSION_ASSET_ACTIVATE,
-  SYSCOIN_TX_VERSION_ASSET_UPDATE: SYSCOIN_TX_VERSION_ASSET_UPDATE,
-  SYSCOIN_TX_VERSION_ASSET_SEND: SYSCOIN_TX_VERSION_ASSET_SEND,
-  SYSCOIN_TX_VERSION_ALLOCATION_MINT: SYSCOIN_TX_VERSION_ALLOCATION_MINT,
-  SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM: SYSCOIN_TX_VERSION_ALLOCATION_BURN_TO_ETHEREUM,
-  SYSCOIN_TX_VERSION_ALLOCATION_SEND: SYSCOIN_TX_VERSION_ALLOCATION_SEND,
-  isNonAssetFunded: isNonAssetFunded,
-  isAsset: isAsset,
-  isAllocationBurn: isAllocationBurn,
-  hasZeroVal: hasZeroVal,
-  isAssetAllocationTx: isAssetAllocationTx,
-  createAssetID: createAssetID,
-  getBaseAssetID: getBaseAssetID
-
+  isNonAssetFunded: isNonAssetFunded
 }
