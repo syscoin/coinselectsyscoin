@@ -81,16 +81,23 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
       if (valueDiff.isNeg()) {
         console.log('syncAllocationsWithInOut: asset output cannot be larger than input. Output: ' + valueAssetOut.value + ' Input: ' + valueAssetIn.value)
         return null
-      } else if(valueDiff.eq(ext.BN_ZERO)) {
+      } else if (valueDiff.eq(ext.BN_ZERO)) {
         continue
       }
       if (assetAllocation === undefined) {
         console.log('syncAllocationsWithInOut: inconsistency related to outputs with asset and assetAllocation with asset guid: ' + assetGuid)
         return null
       }
-      assetAllocation.values.push({ n: outputs.length, value: valueDiff })
-      outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
-
+      // if change output already exists just set new value otherwise create new output and allocation
+      const assetChangeOutputs = outputs.filter(output => (output.assetInfo !== undefined && output.assetInfo.assetGuid === assetGuid && output.assetChangeIndex !== undefined))
+      if (assetChangeOutputs.length > 0) {
+        const assetChangeOutput = assetChangeOutputs[0]
+        assetChangeOutput.assetInfo.value = ext.add(assetChangeOutput.assetInfo.value, valueDiff)
+        assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
+      } else {
+        assetAllocation.values.push({ n: outputs.length, value: valueDiff })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      }
     // asset does not exist in output, create it
     } else {
       if (assetAllocation !== undefined) {
