@@ -9,6 +9,8 @@ function utxoScore (x, feeRate) {
 }
 
 function coinSelect (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize) {
+  // ensure inputs defaults to empty array if undefined/null
+  inputs = inputs || []
   // de-duplicate inputs already selected
   let utxoSys = utxos.filter(utxo => !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.filter(utxo => !utxo.assetInfo)
@@ -114,6 +116,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
 }
 
 function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets, assetMap, memoSize) {
+  // ensure inputs defaults to empty array if undefined/null
+  inputs = inputs || []
   // select outputs and de-duplicate inputs already selected
   let utxoSys = utxos.filter(utxo => !inputs.find(input => input.txId === utxo.txId && input.vout === utxo.vout))
   utxoSys = utxoSys.concat().sort(function (a, b) {
