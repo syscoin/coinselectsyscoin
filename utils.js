@@ -78,17 +78,19 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
 
   if (subtractFeeOutputs.length > 0) {
     // Calculate fee without change output
-    const fee = ext.mul(feeRate, bytesAccum)
+    let fee = ext.mul(feeRate, bytesAccum)
     const outputsCopy = outputs.slice()
     let remainingFee = fee
+    const outputsToRemove = []
 
     // Subtract fees from marked outputs in order
     for (const { output, index } of subtractFeeOutputs) {
       const outputValue = output.value
       let deduction = ext.BN_ZERO
+      const dust = dustThreshold(output, feeRate)
 
       if (!remainingFee.isZero()) {
-        const maxDeduction = outputValue.sub(dustThreshold(output, feeRate))
+        const maxDeduction = outputValue.sub(dust)
 
         if (!maxDeduction.isNeg() && !maxDeduction.isZero()) {
           deduction = remainingFee.lt(maxDeduction) ? remainingFee : maxDeduction
@@ -96,10 +98,30 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
         }
       }
 
-      outputsCopy[index] = Object.assign({}, output, {
-        value: outputValue.sub(deduction)
-      })
-      delete outputsCopy[index].subtractFeeFrom
+      const newValue = outputValue.sub(deduction)
+
+      // If the output value after deduction is at or below dust threshold, mark it for removal
+      if (newValue.lte(dust)) {
+        outputsToRemove.push(index)
+        // If we're removing this output, the full value is effectively deducted
+        remainingFee = remainingFee.sub(outputValue.sub(deduction))
+      } else {
+        outputsCopy[index] = Object.assign({}, output, {
+          value: newValue
+        })
+        delete outputsCopy[index].subtractFeeFrom
+      }
+    }
+
+    // Remove outputs marked for removal (in reverse order to maintain indices)
+    for (let i = outputsToRemove.length - 1; i >= 0; i--) {
+      outputsCopy.splice(outputsToRemove[i], 1)
+    }
+
+    // If we removed outputs, recalculate the fee with the new transaction size
+    if (outputsToRemove.length > 0) {
+      const newBytesAccum = transactionBytes(inputs, outputsCopy)
+      fee = ext.mul(feeRate, newBytesAccum)
     }
 
     // If we couldn't subtract all fees, return error

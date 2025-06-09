@@ -104,3 +104,27 @@ test('max send emulation', function (t) {
   t.equal(resultOutputs[0].value.toString(), totalInputs.sub(fee).toString(), 'output should be total inputs minus fee')
   t.equal(resultOutputs[0].subtractFeeFrom, undefined, 'subtractFeeFrom flag should be removed')
 })
+
+test('subtract fee removes output when it falls below dust', function (t) {
+  t.plan(3)
+
+  const utxos = [
+    { txId: '0000000000000000000000000000000000000000000000000000000000000000', vout: 0, value: new BN(100000) }
+  ]
+
+  const feeRate = new BN(10)
+  // Calculate dust threshold for a BECH32 output (default type)
+  const dustThreshold = new BN(68).mul(feeRate) // inputBytes for BECH32 * feeRate
+
+  const outputs = [
+    { address: 'sys1q...', value: new BN(50000) }, // Regular output
+    { address: 'sys1q...', value: dustThreshold.add(new BN(100)), subtractFeeFrom: true }, // Will fall below dust after fee deduction
+    { address: 'sys1q...', value: new BN(30000), subtractFeeFrom: true } // Should have remaining fee deducted
+  ]
+
+  const { inputs, outputs: resultOutputs } = coinSelect(utxos, [], outputs, feeRate)
+
+  t.equal(inputs.length, 1, 'should use input')
+  t.equal(resultOutputs.length, 2, 'should remove output that falls below dust')
+  t.equal(resultOutputs[0].value.toString(), '50000', 'regular output should keep its value')
+})
