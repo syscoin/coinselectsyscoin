@@ -4,7 +4,7 @@ const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
 function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
-  if (!utils.uintOrNull(feeRate)) return {}
+  if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
   if (memoSize) {
@@ -19,6 +19,10 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs)
+
+  // Check for invalid amounts early but continue to calculate proper fee
+  const hasInvalidAmounts = !inAccum || !outAccum
+
   let fee = ext.mul(feeRate, bytesAccum)
   const memBytes = new BN(memoPadding)
   let blobBytes = new BN(blobSize)
@@ -37,7 +41,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
   // is already enough input?
-  if (!hasSubtractFee && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  if (!hasInvalidAmounts && !hasSubtractFee && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
   for (let i = 0; i < utxos.length; i++) {
     const utxo = utxos[i]
     const utxoBytes = utils.inputBytes(utxo)
@@ -47,7 +51,11 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     // skip detrimental input
     if (ext.gt(utxoFee, utxoValue)) {
       if (i === utxos.length - 1) {
-        return { fee: ext.mul(feeRate, ext.add(bytesAccum, utxoBytes)) }
+        const calculatedFee = ext.mul(feeRate, ext.add(bytesAccum, utxoBytes))
+        return {
+          fee: calculatedFee,
+          error: 'INSUFFICIENT_FUNDS'
+        }
       }
       continue
     }
@@ -74,21 +82,38 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     if (!hasSubtractFee && ext.lt(inAccum, ext.add(outAccum, fee))) continue
     // For subtract fee outputs, continue collecting all inputs
     if (hasSubtractFee) continue
+
+    // Don't call finalize if we have invalid amounts
+    if (hasInvalidAmounts) break
+
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 
   // If subtract fee is specified and we've gone through all utxos,
   // use all inputs collected
-  if (hasSubtractFee && inputs.length > 0) {
+  if (!hasInvalidAmounts && hasSubtractFee && inputs.length > 0) {
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 
-  return { fee: ext.mul(feeRate, bytesAccum) }
+  const calculatedFee = ext.mul(feeRate, bytesAccum)
+
+  // Check if we failed due to invalid amounts
+  if (!inAccum || !outAccum) {
+    return {
+      fee: calculatedFee,
+      error: 'INVALID_AMOUNT'
+    }
+  }
+
+  return {
+    fee: calculatedFee,
+    error: 'INSUFFICIENT_FUNDS'
+  }
 }
 
 // worst-case: O(n)
 function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
-  if (!utils.uintOrNull(feeRate)) return {}
+  if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const assetAllocations = []

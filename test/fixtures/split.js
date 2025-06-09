@@ -145,7 +145,8 @@ module.exports = [{
   ],
   outputs: [],
   expected: {
-    fee: new BN(3050)
+    fee: new BN(3050),
+    error: 'INSUFFICIENT_FUNDS'
   }
 },
 {
@@ -156,7 +157,8 @@ module.exports = [{
     {}
   ],
   expected: {
-    fee: new BN(790)
+    fee: new BN(790),
+    error: 'INSUFFICIENT_FUNDS'
   }
 },
 {
@@ -167,7 +169,8 @@ module.exports = [{
   ],
   outputs: [{}],
   expected: {
-    fee: new BN(1920)
+    fee: new BN(1920),
+    error: 'INSUFFICIENT_FUNDS'
   }
 },
 {
@@ -209,7 +212,8 @@ module.exports = [{
   {}
   ],
   expected: {
-    fee: new BN(2260)
+    fee: new BN(2260),
+    error: 'INVALID_AMOUNT'
   }
 },
 
@@ -227,7 +231,8 @@ module.exports = [{
   }
   ],
   expected: {
-    fee: new BN(2486)
+    fee: new BN(2486),
+    error: 'INVALID_AMOUNT'
   }
 },
 {
@@ -240,7 +245,8 @@ module.exports = [{
     {}
   ],
   expected: {
-    fee: new BN(2260)
+    fee: new BN(2260),
+    error: 'INVALID_AMOUNT'
   }
 },
 {
@@ -250,7 +256,9 @@ module.exports = [{
     new BN(20000)
   ],
   outputs: [{}],
-  expected: {}
+  expected: {
+    error: 'INVALID_FEE_RATE'
+  }
 },
 {
   description: 'inputs and outputs, bad feeRate (NaN)',
@@ -259,6 +267,8 @@ module.exports = [{
     new BN(20000)
   ],
   outputs: [{}],
-  expected: {}
+  expected: {
+    error: 'INVALID_FEE_RATE'
+  }
 }
 ]

@@ -3,13 +3,19 @@ const ext = require('./bn-extensions')
 
 // break utxos into the maximum number of 'output' possible
 module.exports = function broken (utxos, output, feeRate) {
-  if (!utils.uintOrNull(feeRate)) return {}
+  if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
   const changeOutputBytes = utils.outputBytes({})
   let bytesAccum = utils.transactionBytes(utxos, [])
   const value = utils.uintOrNull(output.value)
   const inAccum = utils.sumOrNaN(utxos)
 
-  if (!value || !inAccum) return { fee: ext.mul(feeRate, bytesAccum) }
+  if (!value || !inAccum) {
+    const calculatedFee = ext.mul(feeRate, bytesAccum)
+    return {
+      fee: calculatedFee,
+      error: 'INVALID_AMOUNT'
+    }
+  }
 
   const outputBytes = utils.outputBytes(output)
   let outAccum = ext.BN_ZERO
@@ -21,7 +27,12 @@ module.exports = function broken (utxos, output, feeRate) {
     // did we bust?
     if (ext.lt(inAccum, ext.add(outAccum, fee, value))) {
       // premature?
-      if (ext.isZero(outAccum)) return { fee: fee }
+      if (ext.isZero(outAccum)) {
+        return {
+          fee: fee,
+          error: 'INSUFFICIENT_FUNDS'
+        }
+      }
       break
     }
 

@@ -4,7 +4,7 @@ const BN = require('bn.js')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
 function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize) {
-  if (!utils.uintOrNull(feeRate)) return {}
+  if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
 
   // Blackjack doesn't make sense for subtract fee outputs - return empty to fall back to accumulative
   const hasSubtractFee = outputs.some(o => o.subtractFeeFrom === true)
@@ -20,6 +20,10 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
   let outAccum = utils.sumOrNaN(outputs, txVersion)
+
+  // Check for invalid amounts early
+  const hasInvalidAmounts = !inAccum || !outAccum
+
   const memBytes = new BN(memoPadding)
   let blobBytes = new BN(blobSize)
   // factor blobs by 100x in fee market
@@ -38,7 +42,7 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
   // is already enough input?
-  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
+  if (!hasInvalidAmounts && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
 
   const threshold = utils.dustThreshold({}, feeRate)
   for (let i = 0; i < utxos.length; i++) {
@@ -69,14 +73,30 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
     // go again?
     if (ext.lt(inAccum, ext.add(outAccum, fee))) continue
 
+    // Don't call finalize if we have invalid amounts
+    if (hasInvalidAmounts) break
+
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
-  return { fee: ext.mul(feeRate, bytesAccum) }
+  const calculatedFee = ext.mul(feeRate, bytesAccum)
+
+  // Check if we failed due to invalid amounts
+  if (!inAccum || !outAccum) {
+    return {
+      fee: calculatedFee,
+      error: 'INVALID_AMOUNT'
+    }
+  }
+
+  return {
+    fee: calculatedFee,
+    error: 'INSUFFICIENT_FUNDS'
+  }
 }
 
 // average-case: O(n*log(n))
 function blackjackAsset (utxos, assetMap, feeRate, txVersion) {
-  if (!utils.uintOrNull(feeRate)) return {}
+  if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const mapAssetAmounts = new Map()

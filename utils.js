@@ -70,7 +70,9 @@ function sumOrNaN (range) {
 function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   const bytesAccum = transactionBytes(inputs, outputs)
   const feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
-  const remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs, txVersion), feeAfterExtraOutput))
+  const inputTotal = sumOrNaN(inputs)
+  const outputTotal = sumOrNaN(outputs, txVersion)
+  const remainderAfterExtraOutput = ext.sub(inputTotal, ext.add(outputTotal, feeAfterExtraOutput))
 
   // Check if any outputs have subtractFeeFrom flag
   const subtractFeeOutputs = outputs.map((output, index) => ({ output, index }))
@@ -126,7 +128,15 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
 
     // If we couldn't subtract all fees, return error
     if (!remainingFee.isZero()) {
-      return { fee: fee }
+      return {
+        error: 'SUBTRACT_FEE_FAILED',
+        fee: fee,
+        remainingFee: remainingFee,
+        details: {
+          markedOutputs: subtractFeeOutputs.length,
+          removedOutputs: outputsToRemove.length
+        }
+      }
     }
 
     return {
@@ -141,8 +151,21 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }
 
-  const fee = ext.sub(sumOrNaN(inputs), sumOrNaN(outputs, txVersion))
-  if (!fee) return { fee: ext.mul(feeRate, bytesAccum) }
+  const fee = ext.sub(inputTotal, sumOrNaN(outputs, txVersion))
+  if (!fee) {
+    const calculatedFee = ext.mul(feeRate, bytesAccum)
+    const shortfall = ext.sub(ext.add(outputTotal, calculatedFee), inputTotal)
+    return {
+      error: 'INSUFFICIENT_FUNDS',
+      fee: calculatedFee,
+      shortfall: shortfall,
+      details: {
+        inputTotal: inputTotal,
+        outputTotal: outputTotal,
+        requiredFee: calculatedFee
+      }
+    }
+  }
 
   return {
     inputs: inputs,
