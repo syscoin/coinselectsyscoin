@@ -72,7 +72,49 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   const feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
   const remainderAfterExtraOutput = ext.sub(sumOrNaN(inputs), ext.add(sumOrNaN(outputs, txVersion), feeAfterExtraOutput))
 
-  // is it worth a change output?
+  // Check if any outputs have subtractFeeFrom flag
+  const subtractFeeOutputs = outputs.map((output, index) => ({ output, index }))
+    .filter(item => item.output.subtractFeeFrom === true)
+
+  if (subtractFeeOutputs.length > 0) {
+    // Calculate fee without change output
+    const fee = ext.mul(feeRate, bytesAccum)
+    const outputsCopy = outputs.slice()
+    let remainingFee = fee
+
+    // Subtract fees from marked outputs in order
+    for (const { output, index } of subtractFeeOutputs) {
+      const outputValue = output.value
+      let deduction = ext.BN_ZERO
+
+      if (!remainingFee.isZero()) {
+        const maxDeduction = outputValue.sub(dustThreshold(output, feeRate))
+
+        if (!maxDeduction.isNeg() && !maxDeduction.isZero()) {
+          deduction = remainingFee.lt(maxDeduction) ? remainingFee : maxDeduction
+          remainingFee = remainingFee.sub(deduction)
+        }
+      }
+
+      outputsCopy[index] = Object.assign({}, output, {
+        value: outputValue.sub(deduction)
+      })
+      delete outputsCopy[index].subtractFeeFrom
+    }
+
+    // If we couldn't subtract all fees, return error
+    if (!remainingFee.isZero()) {
+      return { fee: fee }
+    }
+
+    return {
+      inputs: inputs,
+      outputs: outputsCopy,
+      fee: fee
+    }
+  }
+
+  // Normal case: add change output if needed
   if (ext.gt(remainderAfterExtraOutput, dustThreshold({}, feeRate))) {
     outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }

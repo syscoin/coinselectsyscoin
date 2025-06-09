@@ -11,6 +11,10 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     memoPadding = memoSize + 5 + 8 // opreturn overhead + memo size + amount int64
   }
   blobSize = blobSize || 0
+
+  // Check if any output has subtractFeeFrom flag - if so, we want to use all inputs
+  const hasSubtractFee = outputs.some(o => o.subtractFeeFrom === true)
+
   let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
   let inAccum = utils.sumOrNaN(inputs)
@@ -33,7 +37,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
   // is already enough input?
-  if (ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  if (!hasSubtractFee && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
   for (let i = 0; i < utxos.length; i++) {
     const utxo = utxos[i]
     const utxoBytes = utils.inputBytes(utxo)
@@ -67,7 +71,15 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
 
     fee = ext.mul(feeRate, bytesAccum)
     // go again?
-    if (ext.lt(inAccum, ext.add(outAccum, fee))) continue
+    if (!hasSubtractFee && ext.lt(inAccum, ext.add(outAccum, fee))) continue
+    // For subtract fee outputs, continue collecting all inputs
+    if (hasSubtractFee) continue
+    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  }
+
+  // If subtract fee is specified and we've gone through all utxos,
+  // use all inputs collected
+  if (hasSubtractFee && inputs.length > 0) {
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 

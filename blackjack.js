@@ -5,6 +5,11 @@ const BN = require('bn.js')
 // worst-case: O(n)
 function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize) {
   if (!utils.uintOrNull(feeRate)) return {}
+
+  // Blackjack doesn't make sense for subtract fee outputs - return empty to fall back to accumulative
+  const hasSubtractFee = outputs.some(o => o.subtractFeeFrom === true)
+  if (hasSubtractFee) return {}
+
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
   if (memoSize) {
