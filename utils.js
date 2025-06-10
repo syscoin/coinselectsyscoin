@@ -81,10 +81,10 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     return {
       error: 'INSUFFICIENT_FUNDS',
       fee: ext.BN_ZERO,
-      shortfall: shortfall,
+      shortfall,
       details: {
-        inputTotal: inputTotal,
-        outputTotal: outputTotal,
+        inputTotal,
+        outputTotal,
         requiredFee: ext.BN_ZERO,
         message: 'Input value is less than output value'
       }
@@ -147,8 +147,8 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     if (!remainingFee.isZero()) {
       return {
         error: 'SUBTRACT_FEE_FAILED',
-        fee: fee,
-        remainingFee: remainingFee,
+        fee,
+        remainingFee,
         details: {
           markedOutputs: subtractFeeOutputs.length,
           removedOutputs: outputsToRemove.length
@@ -157,9 +157,9 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     }
 
     return {
-      inputs: inputs,
+      inputs,
       outputs: outputsCopy,
-      fee: fee
+      fee
     }
   }
 
@@ -175,19 +175,20 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     return {
       error: 'INSUFFICIENT_FUNDS',
       fee: calculatedFee,
-      shortfall: shortfall,
+      shortfall,
       details: {
-        inputTotal: inputTotal,
-        outputTotal: outputTotal,
-        requiredFee: calculatedFee
+        inputTotal,
+        outputTotal,
+        requiredFee: calculatedFee,
+        message: 'Insufficient funds after accounting for fees'
       }
     }
   }
 
   return {
-    inputs: inputs,
-    outputs: outputs,
-    fee: fee
+    inputs,
+    outputs,
+    fee
   }
 }
 
@@ -200,21 +201,21 @@ function finalizeAssets (inputs, outputs, assetAllocations) {
     }
   }
   return {
-    inputs: inputs,
-    outputs: outputs,
-    assetAllocations: assetAllocations
+    inputs,
+    outputs,
+    assetAllocations
   }
 }
 
 module.exports = {
-  dustThreshold: dustThreshold,
-  finalize: finalize,
-  finalizeAssets: finalizeAssets,
-  inputBytes: inputBytes,
-  outputBytes: outputBytes,
-  sumOrNaN: sumOrNaN,
-  sumForgiving: sumForgiving,
-  transactionBytes: transactionBytes,
-  uintOrNull: uintOrNull,
-  isNonAssetFunded: isNonAssetFunded
+  dustThreshold,
+  finalize,
+  finalizeAssets,
+  inputBytes,
+  outputBytes,
+  sumOrNaN,
+  sumForgiving,
+  transactionBytes,
+  uintOrNull,
+  isNonAssetFunded
 }

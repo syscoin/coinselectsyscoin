@@ -3,8 +3,8 @@ const BN = require('bn.js')
 function expand (values, indices) {
   if (indices) {
     return values.map(function (x, i) {
-      if (BN.isBN(x)) { return { i: i, value: x } }
-      const y = { i: i }
+      if (BN.isBN(x)) { return { i, value: x } }
+      const y = { i }
       for (const k in x) y[k] = x[k]
       return y
     })
@@ -35,6 +35,6 @@ function testValues (t, actual, expected) {
 }
 
 module.exports = {
-  expand: expand,
-  testValues: testValues
+  expand,
+  testValues
 }

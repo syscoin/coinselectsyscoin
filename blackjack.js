@@ -89,8 +89,15 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
   }
 
   return {
+    error: 'INSUFFICIENT_FUNDS',
     fee: calculatedFee,
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: ext.sub(ext.add(outAccum, calculatedFee), inAccum),
+    details: {
+      inputTotal: inAccum,
+      outputTotal: outAccum,
+      requiredFee: calculatedFee,
+      message: 'No exact match found for inputs'
+    }
   }
 }
 
@@ -113,14 +120,14 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion) {
 
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const assetAllocation = { assetGuid: assetGuid, values: [] }
+    const assetAllocation = { assetGuid, values: [] }
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
         // add change index
-        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
       } else {
-        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
       }
     })
     if (!isNonAssetFunded) {
@@ -146,6 +153,6 @@ function blackjackAsset (utxos, assetMap, feeRate, txVersion) {
 }
 
 module.exports = {
-  blackjack: blackjack,
-  blackjackAsset: blackjackAsset
+  blackjack,
+  blackjackAsset
 }

@@ -10,8 +10,15 @@ module.exports = function split (utxos, outputs, feeRate) {
   const fee = ext.mul(feeRate, bytesAccum)
   if (outputs.length === 0) {
     return {
-      fee: fee,
-      error: 'INSUFFICIENT_FUNDS'
+      error: 'INSUFFICIENT_FUNDS',
+      fee,
+      shortfall: ext.BN_ZERO,
+      details: {
+        inputTotal: ext.BN_ZERO,
+        outputTotal: ext.BN_ZERO,
+        requiredFee: fee,
+        message: 'No outputs specified'
+      }
     }
   }
 
@@ -40,9 +47,18 @@ module.exports = function split (utxos, outputs, feeRate) {
   const outAccum = utils.sumForgiving(outputs)
   const remaining = ext.sub(inAccum, outAccum, fee)
   if (!remaining || remaining < 0) {
+    const totalRequired = ext.add(outAccum, fee)
+    const shortfall = ext.sub(totalRequired, inAccum)
     return {
-      fee: fee,
-      error: 'INSUFFICIENT_FUNDS'
+      error: 'INSUFFICIENT_FUNDS',
+      fee,
+      shortfall,
+      details: {
+        inputTotal: inAccum,
+        outputTotal: outAccum,
+        requiredFee: fee,
+        message: 'Insufficient funds for outputs and fees'
+      }
     }
   }
 
@@ -67,13 +83,21 @@ module.exports = function split (utxos, outputs, feeRate) {
     // If we can't create any outputs due to insufficient funds after fees, report as insufficient funds
     const totalRequired = ext.add(fee, ext.mul(utils.dustThreshold({}, feeRate), splitOutputsCount))
     if (ext.lt(inAccum, totalRequired)) {
+      const shortfall = ext.sub(totalRequired, inAccum)
       return {
-        fee: fee,
-        error: 'INSUFFICIENT_FUNDS'
+        error: 'INSUFFICIENT_FUNDS',
+        fee,
+        shortfall,
+        details: {
+          inputTotal: inAccum,
+          outputTotal: outAccum,
+          requiredFee: fee,
+          message: 'Insufficient funds to create dust-free outputs'
+        }
       }
     }
     return {
-      fee: fee,
+      fee,
       error: 'OUTPUT_TOO_SMALL'
     }
   }

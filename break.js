@@ -28,9 +28,18 @@ module.exports = function broken (utxos, output, feeRate) {
     if (ext.lt(inAccum, ext.add(outAccum, fee, value))) {
       // premature?
       if (ext.isZero(outAccum)) {
+        const totalRequired = ext.add(value, fee)
+        const shortfall = ext.sub(totalRequired, inAccum)
         return {
-          fee: fee,
-          error: 'INSUFFICIENT_FUNDS'
+          error: 'INSUFFICIENT_FUNDS',
+          fee,
+          shortfall,
+          details: {
+            inputTotal: inAccum,
+            outputTotal: value,
+            requiredFee: fee,
+            message: 'Insufficient funds to create even one output'
+          }
         }
       }
       break

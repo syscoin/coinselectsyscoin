@@ -145,8 +145,15 @@ module.exports = [{
   ],
   outputs: [],
   expected: {
+    error: 'INSUFFICIENT_FUNDS',
     fee: new BN(3050),
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: new BN(0),
+    details: {
+      inputTotal: new BN(0),
+      outputTotal: new BN(0),
+      requiredFee: new BN(3050),
+      message: 'No outputs specified'
+    }
   }
 },
 {
@@ -157,8 +164,15 @@ module.exports = [{
     {}
   ],
   expected: {
+    error: 'INSUFFICIENT_FUNDS',
     fee: new BN(790),
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: new BN(790),
+    details: {
+      inputTotal: new BN(0),
+      outputTotal: new BN(0),
+      requiredFee: new BN(790),
+      message: 'Insufficient funds for outputs and fees'
+    }
   }
 },
 {
@@ -169,8 +183,15 @@ module.exports = [{
   ],
   outputs: [{}],
   expected: {
+    error: 'INSUFFICIENT_FUNDS',
     fee: new BN(1920),
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: new BN(1390),
+    details: {
+      inputTotal: new BN(2000),
+      outputTotal: new BN(0),
+      requiredFee: new BN(1920),
+      message: 'Insufficient funds to create dust-free outputs'
+    }
   }
 },
 {

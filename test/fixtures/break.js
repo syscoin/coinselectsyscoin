@@ -224,8 +224,15 @@ module.exports = [{
   ],
   output: new BN(40000),
   expected: {
+    error: 'INSUFFICIENT_FUNDS',
     fee: new BN(3390),
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: new BN(1390),
+    details: {
+      inputTotal: new BN(42000),
+      outputTotal: new BN(40000),
+      requiredFee: new BN(3390),
+      message: 'Insufficient funds to create even one output'
+    }
   }
 },
 {
@@ -234,8 +241,15 @@ module.exports = [{
   inputs: [],
   output: new BN(2000),
   expected: {
+    error: 'INSUFFICIENT_FUNDS',
     fee: new BN(450),
-    error: 'INSUFFICIENT_FUNDS'
+    shortfall: new BN(2450),
+    details: {
+      inputTotal: new BN(0),
+      outputTotal: new BN(2000),
+      requiredFee: new BN(450),
+      message: 'Insufficient funds to create even one output'
+    }
   }
 },
 {

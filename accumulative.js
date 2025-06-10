@@ -62,9 +62,18 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
     if (ext.gt(utxoFee, utxoValue)) {
       if (i === utxos.length - 1) {
         const calculatedFee = ext.mul(feeRate, ext.add(bytesAccum, utxoBytes))
+        const totalRequired = ext.add(outAccum, calculatedFee)
+        const shortfall = ext.sub(totalRequired, inAccum)
         return {
+          error: 'INSUFFICIENT_FUNDS',
           fee: calculatedFee,
-          error: 'INSUFFICIENT_FUNDS'
+          shortfall,
+          details: {
+            inputTotal: inAccum,
+            outputTotal: outAccum,
+            requiredFee: calculatedFee,
+            message: 'Last UTXO costs more in fees than its value'
+          }
         }
       }
       continue
@@ -131,7 +140,14 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
   return {
     fee: calculatedFee,
-    error: 'INSUFFICIENT_FUNDS'
+    error: 'INSUFFICIENT_FUNDS',
+    shortfall: ext.sub(ext.add(outAccum, calculatedFee), inAccum),
+    details: {
+      inputTotal: inAccum,
+      outputTotal: outAccum,
+      requiredFee: calculatedFee,
+      message: 'Not enough UTXOs to cover amount and fees'
+    }
   }
 }
 
@@ -145,15 +161,15 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
   const inputs = []
   // loop through all assets looking to get funded, sort the utxo's and then try to fund them incrementally
   for (const [assetGuid, valueAssetObj] of assetMap.entries()) {
-    const assetAllocation = { assetGuid: assetGuid, values: [] }
+    const assetAllocation = { assetGuid, values: [] }
 
     valueAssetObj.outputs.forEach(output => {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
         // add change index
-        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
       } else {
-        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: output.value }, value: dustAmount })
+        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
       }
     })
     // order by descending asset amounts for this asset guid
@@ -179,7 +195,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
         if (ext.gt(inAccum, assetOutAccum)) {
           const changeAsset = ext.sub(inAccum, assetOutAccum)
           // add output as dust amount (smallest possible sys output)
-          const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: changeAsset }, value: dustAmount }
+          const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid, value: changeAsset }, value: dustAmount }
           // but asset commitment will have the full asset change value
           assetAllocation.values.push({ n: outputs.length, value: changeAsset })
           outputs.push(output)
@@ -196,6 +212,6 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
 }
 
 module.exports = {
-  accumulative: accumulative,
-  accumulativeAsset: accumulativeAsset
+  accumulative,
+  accumulativeAsset
 }

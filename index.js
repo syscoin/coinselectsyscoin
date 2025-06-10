@@ -98,7 +98,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         assetAllocation.values[assetChangeOutput.assetChangeIndex].value = ext.add(assetAllocation.values[assetChangeOutput.assetChangeIndex].value, valueDiff)
       } else {
         assetAllocation.values.push({ n: outputs.length, value: valueDiff })
-        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid, value: valueDiff }, value: dustAmount })
       }
     // asset does not exist in output, create it
     } else {
@@ -107,8 +107,8 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
         return null
       }
       const valueDiff = valueAssetIn.value
-      const allocation = { assetGuid: assetGuid, values: [{ n: outputs.length, value: valueDiff }] }
-      outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid: assetGuid, value: valueDiff }, value: dustAmount })
+      const allocation = { assetGuid, values: [{ n: outputs.length, value: valueDiff }] }
+      outputs.push({ assetChangeIndex: allocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid, value: valueDiff }, value: dustAmount })
       assetAllocations.push(allocation)
     }
   }
@@ -146,8 +146,8 @@ function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, 
 }
 
 module.exports = {
-  coinSelect: coinSelect,
-  coinSelectAsset: coinSelectAsset,
-  coinSelectAssetGas: coinSelectAssetGas,
-  utils: utils
+  coinSelect,
+  coinSelectAsset,
+  coinSelectAssetGas,
+  utils
 }

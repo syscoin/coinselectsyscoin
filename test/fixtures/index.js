@@ -407,7 +407,14 @@ module.exports = [{
   ],
   expected: {
     fee: new BN(1920),
-    error: 'INSUFFICIENT_FUNDS'
+    error: 'INSUFFICIENT_FUNDS',
+    shortfall: new BN(21920),
+    details: {
+      inputTotal: new BN(20000),
+      outputTotal: new BN(40000),
+      requiredFee: new BN(1920),
+      message: 'Not enough UTXOs to cover amount and fees'
+    }
   }
 },
 {
@@ -421,7 +428,14 @@ module.exports = [{
   ],
   expected: {
     fee: new BN(1920),
-    error: 'INSUFFICIENT_FUNDS'
+    error: 'INSUFFICIENT_FUNDS',
+    shortfall: new BN(1920),
+    details: {
+      inputTotal: new BN(40000),
+      outputTotal: new BN(40000),
+      requiredFee: new BN(1920),
+      message: 'Not enough UTXOs to cover amount and fees'
+    }
   }
 },
 {
@@ -431,7 +445,14 @@ module.exports = [{
   outputs: [],
   expected: {
     fee: new BN(110),
-    error: 'INSUFFICIENT_FUNDS'
+    error: 'INSUFFICIENT_FUNDS',
+    shortfall: new BN(110),
+    details: {
+      inputTotal: new BN(0),
+      outputTotal: new BN(0),
+      requiredFee: new BN(110),
+      message: 'Not enough UTXOs to cover amount and fees'
+    }
   }
 },
 {
@@ -471,7 +492,14 @@ module.exports = [{
   ],
   expected: {
     fee: new BN(9970),
-    error: 'INSUFFICIENT_FUNDS'
+    error: 'INSUFFICIENT_FUNDS',
+    shortfall: new BN(9999),
+    details: {
+      inputTotal: new BN(0),
+      outputTotal: new BN(29),
+      requiredFee: new BN(9970),
+      message: 'Not enough UTXOs to cover amount and fees'
+    }
   }
 },
 {
