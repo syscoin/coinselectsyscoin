@@ -3,7 +3,9 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
+function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxTxSize) {
+  // Default max transaction size (conservative limit for most networks)
+  maxTxSize = maxTxSize || 99000 // 99KB - leaving room for signatures and safety margin
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
@@ -12,8 +14,16 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
   }
   blobSize = blobSize || 0
 
-  // Check if any output has subtractFeeFrom flag - if so, we want to use all inputs
-  const hasSubtractFee = outputs.some(o => o.subtractFeeFrom === true)
+  // Determine sweep strategy based on subtractFeeFrom distribution
+  const subtractFeeCount = outputs.filter(o => o.subtractFeeFrom === true).length
+  const totalOutputs = outputs.length
+
+  // Use all inputs if:
+  // 1. ALL outputs have subtractFeeFrom (true sweep), OR
+  // 2. MAJORITY of outputs have subtractFeeFrom (sweep-like behavior)
+  const shouldUseAllInputs = subtractFeeCount === totalOutputs ||
+                            (subtractFeeCount > 0 && subtractFeeCount >= totalOutputs / 2)
+  const hasSomeSubtractFee = subtractFeeCount > 0
 
   let feeBytes = new BN(changeOutputBytes.toNumber() + 4)
   let bytesAccum = utils.transactionBytes(inputs, outputs)
@@ -41,7 +51,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
   // is already enough input?
-  if (!hasInvalidAmounts && !hasSubtractFee && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  if (!hasInvalidAmounts && !shouldUseAllInputs && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
   for (let i = 0; i < utxos.length; i++) {
     const utxo = utxos[i]
     const utxoBytes = utils.inputBytes(utxo)
@@ -61,6 +71,18 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     }
 
     bytesAccum = ext.add(bytesAccum, utxoBytes)
+
+    // Check if adding this input would exceed transaction size limit
+    if (bytesAccum.gt(new BN(maxTxSize))) {
+      // Don't add this input, use what we have so far
+      if ((shouldUseAllInputs || hasSomeSubtractFee) && inputs.length > 0) {
+        // For sweep or subtractFeeFrom, use current inputs even if we hit size limit
+        return utils.finalize(inputs, outputs, feeRate, feeBytes)
+      }
+      // For normal transactions, this means we can't fit enough inputs
+      break
+    }
+
     inAccum = ext.add(inAccum, utxoValue)
     inputs.push(utxo)
     // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
@@ -79,9 +101,11 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
 
     fee = ext.mul(feeRate, bytesAccum)
     // go again?
-    if (!hasSubtractFee && ext.lt(inAccum, ext.add(outAccum, fee))) continue
-    // For subtract fee outputs, continue collecting all inputs
-    if (hasSubtractFee) continue
+    if (!shouldUseAllInputs && ext.lt(inAccum, ext.add(outAccum, fee))) continue
+    // For sweep operations, continue collecting ALL inputs (respecting size limits)
+    if (shouldUseAllInputs) {
+      continue
+    }
 
     // Don't call finalize if we have invalid amounts
     if (hasInvalidAmounts) break
@@ -89,9 +113,9 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize) {
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 
-  // If subtract fee is specified and we've gone through all utxos,
+  // If sweep is specified and we've gone through all utxos,
   // use all inputs collected
-  if (!hasInvalidAmounts && hasSubtractFee && inputs.length > 0) {
+  if (!hasInvalidAmounts && shouldUseAllInputs && inputs.length > 0) {
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
 
