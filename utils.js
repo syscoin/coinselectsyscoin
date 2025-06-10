@@ -74,6 +74,23 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   const outputTotal = sumOrNaN(outputs, txVersion)
   const remainderAfterExtraOutput = ext.sub(inputTotal, ext.add(outputTotal, feeAfterExtraOutput))
 
+  // Fundamental validation: input must ALWAYS be >= output regardless of subtractFeeFrom
+  // subtractFeeFrom can only reduce outputs, never create value from nothing
+  if (inputTotal && outputTotal && inputTotal.lt(outputTotal)) {
+    const shortfall = outputTotal.sub(inputTotal)
+    return {
+      error: 'INSUFFICIENT_FUNDS',
+      fee: ext.BN_ZERO,
+      shortfall: shortfall,
+      details: {
+        inputTotal: inputTotal,
+        outputTotal: outputTotal,
+        requiredFee: ext.BN_ZERO,
+        message: 'Input value is less than output value'
+      }
+    }
+  }
+
   // Check if any outputs have subtractFeeFrom flag
   const subtractFeeOutputs = outputs.map((output, index) => ({ output, index }))
     .filter(item => item.output.subtractFeeFrom === true)
