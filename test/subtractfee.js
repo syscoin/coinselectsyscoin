@@ -74,7 +74,9 @@ test('subtract fee - insufficient funds', function (t) {
 
   const result = coinSelect(utxos, [], outputs, feeRate)
 
-  t.equal(result.fee && result.fee.toNumber() > 0 && !result.inputs, true, 'should return fee only when output value would go below dust')
+  // When output value > input value, should return INSUFFICIENT_FUNDS error
+  // even with subtractFeeFrom (can't create value from nothing)
+  t.equal(result.error, 'INSUFFICIENT_FUNDS', 'should return INSUFFICIENT_FUNDS when output > input')
 })
 
 test('max send emulation', function (t) {
@@ -127,4 +129,84 @@ test('subtract fee removes output when it falls below dust', function (t) {
   t.equal(inputs.length, 1, 'should use input')
   t.equal(resultOutputs.length, 2, 'should remove output that falls below dust')
   t.equal(resultOutputs[0].value.toString(), '50000', 'regular output should keep its value')
+})
+
+test('max send with high fee rate and detrimental UTXOs', function (t) {
+  t.plan(6)
+
+  // Real-world scenario: mix of large and small UTXOs
+  // At high fee rates, small UTXOs become detrimental (fee > value)
+  // but MAX send should still work by using ALL UTXOs
+  const utxos = [
+    { txId: '0000000000000000000000000000000000000000000000000000000000000000', vout: 0, value: new BN(47457330) }, // Large UTXO
+    { txId: '0000000000000000000000000000000000000000000000000000000000000001', vout: 0, value: new BN(1000000) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000002', vout: 0, value: new BN(1000000) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000003', vout: 0, value: new BN(998530) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000004', vout: 0, value: new BN(95020) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000005', vout: 0, value: new BN(19290) }, // Detrimental at 527 sat/byte
+    { txId: '0000000000000000000000000000000000000000000000000000000000000006', vout: 0, value: new BN(10000) } // Detrimental at 527 sat/byte
+  ]
+
+  const totalValue = utxos.reduce((sum, utxo) => sum.add(utxo.value), new BN(0))
+
+  // MAX send: output value = total UTXO value, subtract fees from output
+  const outputs = [
+    { address: 'sys1qmd75mjpknw3zywfrd3zypq6awl6uumu5jnzvf3', value: totalValue, subtractFeeFrom: true }
+  ]
+
+  // High fee rate that makes small UTXOs detrimental (fee > UTXO value)
+  const feeRate = new BN(527) // 527 sat/byte - this was the failing case
+
+  const result = coinSelect(utxos, [], outputs, feeRate)
+
+  // Should NOT fail with INSUFFICIENT_FUNDS despite detrimental UTXOs
+  t.ok(result.inputs, 'should return inputs')
+  t.ok(result.outputs, 'should return outputs')
+  t.equal(result.error, undefined, 'should not have error')
+
+  // Should use ALL UTXOs including detrimental ones (this is the key fix)
+  t.equal(result.inputs.length, utxos.length, 'should use all UTXOs including detrimental ones')
+
+  // Should have single output with fee subtracted
+  t.equal(result.outputs.length, 1, 'should have single output')
+
+  // Verify math: output value should be total inputs minus fee
+  const totalInputs = result.inputs.reduce((sum, input) => sum.add(input.value), new BN(0))
+  const expectedOutputValue = totalInputs.sub(result.fee)
+  t.equal(result.outputs[0].value.toString(), expectedOutputValue.toString(), 'output should be total inputs minus fee')
+})
+
+test('max send with reasonable fee rate for comparison', function (t) {
+  t.plan(4)
+
+  // Same UTXOs as above but with reasonable fee rate
+  const utxos = [
+    { txId: '0000000000000000000000000000000000000000000000000000000000000000', vout: 0, value: new BN(47457330) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000001', vout: 0, value: new BN(1000000) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000002', vout: 0, value: new BN(1000000) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000003', vout: 0, value: new BN(998530) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000004', vout: 0, value: new BN(95020) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000005', vout: 0, value: new BN(19290) },
+    { txId: '0000000000000000000000000000000000000000000000000000000000000006', vout: 0, value: new BN(10000) }
+  ]
+
+  const totalValue = utxos.reduce((sum, utxo) => sum.add(utxo.value), new BN(0))
+  const outputs = [
+    { address: 'sys1qmd75mjpknw3zywfrd3zypq6awl6uumu5jnzvf3', value: totalValue, subtractFeeFrom: true }
+  ]
+
+  const feeRate = new BN(10) // Reasonable fee rate - all UTXOs are profitable
+
+  const result = coinSelect(utxos, [], outputs, feeRate)
+
+  t.equal(result.inputs.length, utxos.length, 'should use all UTXOs')
+  t.equal(result.outputs.length, 1, 'should have single output')
+
+  // Verify math
+  const totalInputs = result.inputs.reduce((sum, input) => sum.add(input.value), new BN(0))
+  const expectedOutputValue = totalInputs.sub(result.fee)
+  t.equal(result.outputs[0].value.toString(), expectedOutputValue.toString(), 'output should be total inputs minus fee')
+
+  // Fee should be much lower than the high fee rate case
+  t.ok(result.fee.lt(new BN(100000)), 'fee should be reasonable (< 100k sats)')
 })

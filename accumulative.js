@@ -7,6 +7,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
   // Default max transaction size (conservative limit for most networks)
   maxTxSize = maxTxSize || 99000 // 99KB - leaving room for signatures and safety margin
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
+
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
   if (memoSize) {
@@ -42,6 +43,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
   feeBytes = ext.add(feeBytes, memBytes)
   feeBytes = ext.add(feeBytes, blobBytes)
   const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+
   if (blobSize) {
     outAccum = ext.add(outAccum, dustAmount)
     bytesAccum = ext.add(bytesAccum, changeOutputBytes)
@@ -50,8 +52,12 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
     bytesAccum = ext.add(bytesAccum, changeOutputBytes)
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
+
   // is already enough input?
-  if (!hasInvalidAmounts && !shouldUseAllInputs && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  if (!hasInvalidAmounts && !shouldUseAllInputs && ext.gte(inAccum, ext.add(outAccum, fee))) {
+    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+  }
+
   for (let i = 0; i < utxos.length; i++) {
     const utxo = utxos[i]
     const utxoBytes = utils.inputBytes(utxo)
@@ -60,6 +66,25 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
     // skip detrimental input
     if (ext.gt(utxoFee, utxoValue)) {
+      // Don't skip detrimental UTXOs in sweep mode (subtractFeeFrom)
+      // In sweep mode, fees are deducted from output value, so individual UTXO profitability doesn't matter
+      if (shouldUseAllInputs || hasSomeSubtractFee) {
+        // Add the UTXO even if it's detrimental in sweep mode
+        bytesAccum = ext.add(bytesAccum, utxoBytes)
+
+        // Check transaction size limit
+        if (bytesAccum.gt(new BN(maxTxSize))) {
+          return utils.finalize(inputs, outputs, feeRate, feeBytes)
+        }
+
+        inAccum = ext.add(inAccum, utxoValue)
+        inputs.push(utxo)
+
+        // Continue to next UTXO
+        continue
+      }
+
+      // Original logic: skip detrimental UTXOs in normal mode
       if (i === utxos.length - 1) {
         const calculatedFee = ext.mul(feeRate, ext.add(bytesAccum, utxoBytes))
         const totalRequired = ext.add(outAccum, calculatedFee)
@@ -94,6 +119,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
     inAccum = ext.add(inAccum, utxoValue)
     inputs.push(utxo)
+
     // if this is an asset input, we will need another output to send asset to so add dust satoshi to output and add output fee
     if (utxo.assetInfo) {
       outAccum = ext.add(outAccum, dustAmount)
@@ -109,15 +135,20 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
     }
 
     fee = ext.mul(feeRate, bytesAccum)
+
     // go again?
-    if (!shouldUseAllInputs && ext.lt(inAccum, ext.add(outAccum, fee))) continue
+    if (!shouldUseAllInputs && ext.lt(inAccum, ext.add(outAccum, fee))) {
+      continue
+    }
     // For sweep operations, continue collecting ALL inputs (respecting size limits)
     if (shouldUseAllInputs) {
       continue
     }
 
     // Don't call finalize if we have invalid amounts
-    if (hasInvalidAmounts) break
+    if (hasInvalidAmounts) {
+      break
+    }
 
     return utils.finalize(inputs, outputs, feeRate, feeBytes)
   }
