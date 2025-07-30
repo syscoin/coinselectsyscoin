@@ -22,6 +22,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
   // Use all inputs if:
   // 1. ALL outputs have subtractFeeFrom (true sweep), OR
   // 2. MAJORITY of outputs have subtractFeeFrom (sweep-like behavior)
+  // NOTE: We'll still evaluate each UTXO individually to avoid detrimental ones
   const shouldUseAllInputs = subtractFeeCount === totalOutputs ||
                             (subtractFeeCount > 0 && subtractFeeCount >= totalOutputs / 2)
   const hasSomeSubtractFee = subtractFeeCount > 0
@@ -64,12 +65,25 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
     const utxoFee = ext.mul(feeRate, utxoBytes)
     const utxoValue = utils.uintOrNull(utxo.value)
 
-    // skip detrimental input
-    if (ext.gt(utxoFee, utxoValue)) {
-      // Don't skip detrimental UTXOs in sweep mode (subtractFeeFrom)
-      // In sweep mode, fees are deducted from output value, so individual UTXO profitability doesn't matter
+    // Handle detrimental inputs (where fee > value)
+    const isDetrimental = ext.gt(utxoFee, utxoValue)
+
+    if (isDetrimental) {
+      // In sweep mode with subtractFeeFrom, evaluate if this UTXO helps or hurts
       if (shouldUseAllInputs || hasSomeSubtractFee) {
-        // Add the UTXO even if it's detrimental in sweep mode
+        // Calculate the net contribution of this UTXO (negative for detrimental)
+        const netContribution = ext.sub(utxoValue, utxoFee)
+
+        // For subtractFeeFrom outputs, check if including this UTXO helps
+        if (hasSomeSubtractFee) {
+          // In true sweep mode, skip UTXOs that have negative net contribution
+          // They would only reduce the final output amount
+          if (netContribution.isNeg()) {
+            continue // Skip this detrimental UTXO
+          }
+        }
+
+        // If we get here, include the UTXO (it's either beneficial or required)
         bytesAccum = ext.add(bytesAccum, utxoBytes)
 
         // Check transaction size limit
@@ -79,8 +93,6 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
         inAccum = ext.add(inAccum, utxoValue)
         inputs.push(utxo)
-
-        // Continue to next UTXO
         continue
       }
 
