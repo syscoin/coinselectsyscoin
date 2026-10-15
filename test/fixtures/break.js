@@ -82,9 +82,13 @@ module.exports = [{
     },
     {
       value: new BN(2000)
+    },
+    {
+      changeIndex: 4,
+      value: new BN(720)
     }
     ],
-    fee: new BN(4000)
+    fee: new BN(3280)
   }
 },
 {

@@ -52,7 +52,7 @@ module.exports = [{
     new BN(5000000000)
   ],
   outputs: [
-    new BN(1)
+    new BN(1000)
   ],
   expected: {
     inputs: [{
@@ -60,11 +60,11 @@ module.exports = [{
       value: new BN(5000000000)
     }],
     outputs: [{
-      value: new BN(1)
+      value: new BN(1000)
     },
     {
       changeIndex: 1,
-      value: new BN(4999998849)
+      value: new BN(4999997850)
     }
     ],
     fee: new BN(1150)
@@ -93,7 +93,7 @@ module.exports = [{
   }
 },
 {
-  description: '1 output, sub-optimal inputs (if re-ordered), direct possible, but slightly higher fee',
+  description: '1 output, formerly fee-dependent dust change is now retained',
   feeRate: new BN(10),
   inputs: [
     new BN(10000),
@@ -110,8 +110,11 @@ module.exports = [{
     }],
     outputs: [{
       value: new BN(6800)
+    }, {
+      changeIndex: 1,
+      value: new BN(900)
     }],
-    fee: new BN(3200)
+    fee: new BN(2300)
   }
 },
 {
@@ -481,37 +484,8 @@ module.exports = [{
   description: 'not enough funds (no inputs), empty result (>1KiB)',
   feeRate: new BN(10),
   inputs: [],
-  outputs: [
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1)
-  ],
+  // Keep the >1KiB insufficient-funds case, with individually relayable outputs.
+  outputs: Array.from({ length: 29 }, () => new BN(1000)),
   expected: {
     fee: new BN(9970),
     error: 'INSUFFICIENT_FUNDS'

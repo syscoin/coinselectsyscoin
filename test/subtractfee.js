@@ -107,28 +107,30 @@ test('max send emulation', function (t) {
   t.equal(resultOutputs[0].subtractFeeFrom, undefined, 'subtractFeeFrom flag should be removed')
 })
 
-test('subtract fee removes output when it falls below dust', function (t) {
-  t.plan(3)
+test('subtract fee preserves every recipient at its relay dust floor', function (t) {
+  t.plan(5)
 
   const utxos = [
-    { txId: '0000000000000000000000000000000000000000000000000000000000000000', vout: 0, value: new BN(100000) }
+    { txId: '0000000000000000000000000000000000000000000000000000000000000000', vout: 0, value: new BN(80780) }
   ]
 
   const feeRate = new BN(10)
-  // Calculate dust threshold for a BECH32 output (default type)
-  const dustThreshold = new BN(68).mul(feeRate) // inputBytes for BECH32 * feeRate
+  // Missing script/type metadata uses the conservative LEGACY relay floor.
+  const dustThreshold = new BN(546)
 
   const outputs = [
     { address: 'sys1q...', value: new BN(50000) }, // Regular output
-    { address: 'sys1q...', value: dustThreshold.add(new BN(100)), subtractFeeFrom: true }, // Will fall below dust after fee deduction
+    { address: 'sys1q...', value: new BN(780), subtractFeeFrom: true }, // Can pay only the amount above its floor
     { address: 'sys1q...', value: new BN(30000), subtractFeeFrom: true } // Should have remaining fee deducted
   ]
 
-  const { inputs, outputs: resultOutputs } = coinSelect(utxos, [], outputs, feeRate)
+  const { inputs, outputs: resultOutputs, fee } = coinSelect(utxos, [], outputs, feeRate)
 
   t.equal(inputs.length, 1, 'should use input')
-  t.equal(resultOutputs.length, 2, 'should remove output that falls below dust')
+  t.equal(resultOutputs.length, 3, 'must not discard an explicit recipient')
   t.equal(resultOutputs[0].value.toString(), '50000', 'regular output should keep its value')
+  t.equal(resultOutputs[1].value.toString(), dustThreshold.toString(), 'first marked recipient retains its relay floor')
+  t.equal(inputs[0].value.sub(resultOutputs.reduce((sum, output) => sum.add(output.value), new BN(0))).toString(), fee.toString(), 'actual input/output fee is conserved')
 })
 
 test('max send with high fee rate and detrimental UTXOs', function (t) {

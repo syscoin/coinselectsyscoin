@@ -23,14 +23,41 @@ Module | Algorithm | Re-orders UTXOs?
 **Note:** Each algorithm will add a change output if the `input - output - fee` value difference is over a dust threshold.
 This is calculated independently by `utils.finalize`, irrespective of the algorithm chosen, for the purposes of safety.
 
-`coinSelect` accepts an optional final `dustPolicy(output)` argument, returning a
-BN threshold in satoshis derived by the caller from the actual output script.
-This policy is independent of the transaction fee rate. The native policy path
-accepts equality, never drops a fee-subtracted recipient, and refuses when the
-fee cannot be paid while retaining every recipient above its threshold. Existing
-callers that omit this argument, including asset-carrier construction, retain
-their existing behavior. `coinSelectAssetGas` accepts the same optional final
-argument for a native transaction funded from asset-bearing inputs.
+The shared default dust policy applies to native outputs and SPT carriers. It
+uses Core's serialized-output-plus-spend-size rule at **3000 sat/kvB**, independent
+of the chosen transaction fee rate. Actual Buffer/Uint8Array `output.scriptPubKey` metadata
+is the authoritative full locking script. Without it, legacy `output.script` is
+OP_RETURN data payload (zero dust floor regardless of its first byte), not a
+spend locking script; otherwise the type hint is used. `scriptPubKey` does not
+change the existing transaction-size estimator or replace the builder's data
+`.script`. OP_RETURN/unspendable scripts have a zero dust threshold. Missing
+script metadata falls back to LEGACY (546 sats); type hints support LEGACY,
+P2SH (540), BECH32/P2WPKH (294), P2WSH and P2TR (330).
+
+The optional final argument is data only, not a callback:
+
+```javascript
+const options = {
+  changeOutput: { scriptPubKey: changeScriptBuffer },
+  dustRelayFee: new BN(3000) // sat/kvB; optional, nonnegative BN
+}
+coinSelect.coinSelect(utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize, options)
+coinSelect.coinSelectAsset(utxos, assetMap, feeRate, txVersion, options)
+coinSelect.coinSelectAssetGas(allocations, utxos, inputs, outputs, feeRate, txVersion, assets, assetMap, memoSize, options)
+```
+
+Each assetMap value may provide `changeScript`; each recipient output may provide
+`scriptPubKey`. Constructed SPT carriers preserve these scripts and use the same
+relay-policy floor. `utils.dustThreshold(output, feeRate, options)` retains its
+second argument for compatibility but ignores it for dust. `split` and `break`
+accept options as their fourth argument. Equality with the threshold is allowed;
+explicit recipients, including MAX recipients, are never discarded. Insufficient
+MAX or dusty recipients return an error, and native change below its floor is
+absorbed into the fee. Builders must still validate final scripts/amounts after
+their own output transformations. This models Core's default policy, not an
+assertion about an operator's custom relay settings.
+Malformed recipient `scriptPubKey` or asset `changeScript` returns a structured
+`INVALID_OUTPUT_SCRIPT` before asset selection or allocation synchronization.
 
 **Pro-tip:** if you want to send-all inputs to an output address, `coinselectsyscoin/split` with a partial output (`.address` defined, no `.value`) can be used to send-all, while leaving an appropriate amount for the `fee`. 
 

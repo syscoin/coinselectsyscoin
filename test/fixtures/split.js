@@ -176,7 +176,7 @@ module.exports = [{
   }
 },
 {
-  description: '1 to 2, output is dust (no result)',
+  description: '1 to 1, output below default relay dust (no result)',
   feeRate: new BN(10),
   inputs: [
     new BN(2000)
@@ -185,7 +185,7 @@ module.exports = [{
   expected: {
     error: 'INSUFFICIENT_FUNDS',
     fee: new BN(1920),
-    shortfall: new BN(1390),
+    shortfall: new BN(466),
     details: {
       inputTotal: new BN(2000),
       outputTotal: new BN(0),

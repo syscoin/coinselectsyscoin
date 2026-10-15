@@ -2,8 +2,10 @@ const utils = require('./utils')
 const ext = require('./bn-extensions')
 
 // break utxos into the maximum number of 'output' possible
-module.exports = function broken (utxos, output, feeRate) {
+module.exports = function broken (utxos, output, feeRate, options) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
+  const invalid = utils.validateDustOutputs([output], options)
+  if (invalid) return invalid
   const changeOutputBytes = utils.outputBytes({})
   let bytesAccum = utils.transactionBytes(utxos, [])
   const value = utils.uintOrNull(output.value)
@@ -50,5 +52,5 @@ module.exports = function broken (utxos, output, feeRate) {
     outputs.push(output)
   }
 
-  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
+  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes, undefined, options)
 }

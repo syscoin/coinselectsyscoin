@@ -3,10 +3,12 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxTxSize, dustPolicy) {
+function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxTxSize, options) {
   // Default max transaction size (conservative limit for most networks)
   maxTxSize = maxTxSize || 99000 // 99KB - leaving room for signatures and safety margin
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
+  const invalid = utils.validateDustOutputs(outputs, options)
+  if (invalid) return invalid
 
   const changeOutputBytes = utils.outputBytes({})
   let memoPadding = 0
@@ -42,7 +44,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
   bytesAccum = ext.add(bytesAccum, memBytes)
   feeBytes = ext.add(feeBytes, memBytes)
   feeBytes = ext.add(feeBytes, blobBytes)
-  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  const dustAmount = utils.dustThreshold(utils.assetChangeOutput(null, options), feeRate, options)
 
   if (blobSize) {
     outAccum = ext.add(outAccum, dustAmount)
@@ -55,7 +57,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
   // is already enough input?
   if (!hasInvalidAmounts && !shouldUseAllInputs && ext.gte(inAccum, ext.add(outAccum, fee))) {
-    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, options)
   }
 
   for (let i = 0; i < utxos.length; i++) {
@@ -74,7 +76,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
         // Check transaction size limit
         if (bytesAccum.gt(new BN(maxTxSize))) {
-          return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
+          return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, options)
         }
 
         inAccum = ext.add(inAccum, utxoValue)
@@ -111,7 +113,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
       // Don't add this input, use what we have so far
       if ((shouldUseAllInputs || hasSomeSubtractFee) && inputs.length > 0) {
         // For sweep or subtractFeeFrom, use current inputs even if we hit size limit
-        return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
+        return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, options)
       }
       // For normal transactions, this means we can't fit enough inputs
       break
@@ -150,13 +152,13 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
       break
     }
 
-    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, options)
   }
 
   // If sweep is specified and we've gone through all utxos,
   // use all inputs collected
   if (!hasInvalidAmounts && shouldUseAllInputs && inputs.length > 0) {
-    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, options)
   }
 
   const calculatedFee = ext.mul(feeRate, bytesAccum)
@@ -183,9 +185,10 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 }
 
 // worst-case: O(n)
-function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
+function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, options) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
-  const dustAmount = utils.dustThreshold({ type: 'BECH32' }, feeRate)
+  const invalid = utils.validateAssetScripts(assetMap, options)
+  if (invalid) return invalid
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const assetAllocations = []
   const outputs = []
@@ -198,9 +201,9 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
       assetAllocation.values.push({ n: outputs.length, value: output.value })
       if (output.address === valueAssetObj.changeAddress) {
         // add change index
-        outputs.push({ assetChangeIndex: assetAllocation.values.length - 1, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
+        outputs.push(utils.assetOutput(output, valueAssetObj, assetGuid, output.value, assetAllocation.values.length - 1, options))
       } else {
-        outputs.push({ address: output.address, type: 'BECH32', assetInfo: { assetGuid, value: output.value }, value: dustAmount })
+        outputs.push(utils.assetOutput(output, valueAssetObj, assetGuid, output.value, undefined, options))
       }
     })
     // order by descending asset amounts for this asset guid
@@ -226,7 +229,7 @@ function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion) {
         if (ext.gt(inAccum, assetOutAccum)) {
           const changeAsset = ext.sub(inAccum, assetOutAccum)
           // add output as dust amount (smallest possible sys output)
-          const output = { assetChangeIndex: assetAllocation.values.length, type: 'BECH32', assetInfo: { assetGuid, value: changeAsset }, value: dustAmount }
+          const output = utils.assetOutput({}, valueAssetObj, assetGuid, changeAsset, assetAllocation.values.length, options)
           // but asset commitment will have the full asset change value
           assetAllocation.values.push({ n: outputs.length, value: changeAsset })
           outputs.push(output)

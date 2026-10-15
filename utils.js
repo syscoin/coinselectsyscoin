@@ -31,10 +31,95 @@ function outputBytes (output) {
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
 
-function dustThreshold (output, feeRate, dustPolicy) {
-  if (dustPolicy) return dustPolicy(output)
-  /* ... classify the output for input estimate  */
-  return ext.mul(inputBytes(output), feeRate)
+function dustOptions (options) {
+  if (options === undefined || options === null) options = {}
+  if (typeof options !== 'object' || Array.isArray(options) ||
+      Object.keys(options).some(key => key !== 'changeOutput' && key !== 'dustRelayFee')) {
+    throw new TypeError('Invalid dust options')
+  }
+  const dustRelayFee = options.dustRelayFee === undefined ? new BN(3000) : options.dustRelayFee
+  if (!BN.isBN(dustRelayFee) || dustRelayFee.isNeg()) throw new TypeError('Invalid dust relay fee')
+  const changeOutput = options.changeOutput === undefined ? {} : options.changeOutput
+  if (!changeOutput || typeof changeOutput !== 'object' || Array.isArray(changeOutput) ||
+      Object.keys(changeOutput).some(key => key !== 'scriptPubKey') ||
+      (changeOutput.scriptPubKey !== undefined && !(changeOutput.scriptPubKey instanceof Uint8Array))) {
+    throw new TypeError('Invalid change output')
+  }
+  return { dustRelayFee, changeOutput }
+}
+
+function dustThreshold (output, feeRate, options) {
+  // feeRate is retained for API compatibility; relay policy is independent.
+  const policy = dustOptions(options)
+  output = output || {}
+  const rawScript = output.scriptPubKey
+  let size
+  if (rawScript !== undefined) {
+    if (!(rawScript instanceof Uint8Array)) throw new TypeError('Invalid output script')
+    const script = Buffer.from(rawScript)
+    if (script[0] === 0x6a || script.length > 10000) return new BN(0)
+    const witness = script.length >= 4 && script.length <= 42 &&
+      (script[0] === 0 || (script[0] >= 0x51 && script[0] <= 0x60)) &&
+      script[1] >= 2 && script[1] <= 40 && script[1] + 2 === script.length
+    size = 8 + (script.length < 253 ? 1 : 3) + script.length + (witness ? 67 : 148)
+  } else if (output.script !== undefined) {
+    // The legacy API stores OP_RETURN data here, not the full locking script.
+    if (!(output.script instanceof Uint8Array)) throw new TypeError('Invalid output script')
+    return new BN(0)
+  } else {
+    const sizes = { LEGACY: 182, P2SH: 180, BECH32: 98, P2WPKH: 98, P2WSH: 110, P2TR: 110 }
+    size = Object.prototype.hasOwnProperty.call(sizes, output.type) ? sizes[output.type] : sizes.LEGACY
+  }
+  // Core CFeeRate::GetFee rounds up, including non-integral custom relay rates.
+  return policy.dustRelayFee.mul(new BN(size)).add(new BN(999)).div(new BN(1000))
+}
+
+function validateDustOutputs (outputs, options) {
+  try {
+    dustOptions(options)
+    for (let i = 0; i < outputs.length; i++) {
+      const output = outputs[i]
+      const minimum = dustThreshold(output, undefined, options)
+      if (uintOrNull(output.value) && output.subtractFeeFrom !== true && output.value.lt(minimum)) {
+        return { error: 'DUST_OUTPUT', fee: ext.BN_ZERO, details: { outputIndex: i, minimum } }
+      }
+    }
+  } catch (error) {
+    return { error: error.message === 'Invalid output script' ? 'INVALID_OUTPUT_SCRIPT' : 'INVALID_DUST_OPTIONS' }
+  }
+  return null
+}
+
+function validateAssetScripts (assetMap, options) {
+  const invalid = validateDustOutputs([], options)
+  if (invalid) return invalid
+  if (!assetMap) return null
+  for (const asset of assetMap.values()) {
+    if (asset.changeScript !== undefined && !(asset.changeScript instanceof Uint8Array)) return { error: 'INVALID_OUTPUT_SCRIPT' }
+    for (const output of asset.outputs || []) {
+      if (output.scriptPubKey !== undefined && !(output.scriptPubKey instanceof Uint8Array)) return { error: 'INVALID_OUTPUT_SCRIPT' }
+    }
+  }
+  return null
+}
+
+function assetChangeOutput (asset, options) {
+  const output = { type: 'BECH32' }
+  const script = asset && asset.changeScript !== undefined
+    ? asset.changeScript
+    : dustOptions(options).changeOutput.scriptPubKey
+  if (script !== undefined) output.scriptPubKey = script
+  return output
+}
+
+function assetOutput (output, asset, assetGuid, value, allocationIndex, options) {
+  const change = allocationIndex !== undefined
+  const result = change ? assetChangeOutput(asset, options) : { type: 'BECH32', address: output.address }
+  if (output.scriptPubKey !== undefined) result.scriptPubKey = output.scriptPubKey
+  if (change) result.assetChangeIndex = allocationIndex
+  result.assetInfo = { assetGuid, value }
+  result.value = dustThreshold(result, undefined, options)
+  return result
 }
 
 function transactionBytes (inputs, outputs) {
@@ -68,7 +153,9 @@ function sumOrNaN (range) {
   }, ext.BN_ZERO)
 }
 
-function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
+function finalize (inputs, outputs, feeRate, feeBytes, txVersion, options) {
+  const invalid = validateDustOutputs(outputs, options)
+  if (invalid) return invalid
   const bytesAccum = transactionBytes(inputs, outputs)
   const feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
   const inputTotal = sumOrNaN(inputs)
@@ -98,16 +185,15 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
 
   if (subtractFeeOutputs.length > 0) {
     // Calculate fee without change output
-    let fee = ext.mul(feeRate, bytesAccum)
+    const fee = ext.mul(feeRate, bytesAccum)
     const outputsCopy = outputs.slice()
     let remainingFee = fee
-    const outputsToRemove = []
 
     // Subtract fees from marked outputs in order
     for (const { output, index } of subtractFeeOutputs) {
       const outputValue = output.value
       let deduction = ext.BN_ZERO
-      const dust = dustThreshold(output, feeRate, dustPolicy)
+      const dust = dustThreshold(output, feeRate, options)
 
       if (!remainingFee.isZero()) {
         const maxDeduction = outputValue.sub(dust)
@@ -120,30 +206,15 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
 
       const newValue = outputValue.sub(deduction)
 
-      // If the output value after deduction is at or below dust threshold, mark it for removal
-      if (dustPolicy && newValue.lt(dust)) {
+      // Recipients are never discarded to make a fee-subtracted send fit.
+      if (newValue.lt(dust)) {
         return { error: 'DUST_OUTPUT', fee, details: { outputIndex: index, minimum: dust } }
-      } else if (!dustPolicy && newValue.lte(dust)) {
-        outputsToRemove.push(index)
-        // If we're removing this output, the full value is effectively deducted
-        remainingFee = remainingFee.sub(outputValue.sub(deduction))
       } else {
         outputsCopy[index] = Object.assign({}, output, {
           value: newValue
         })
         delete outputsCopy[index].subtractFeeFrom
       }
-    }
-
-    // Remove outputs marked for removal (in reverse order to maintain indices)
-    for (let i = outputsToRemove.length - 1; i >= 0; i--) {
-      outputsCopy.splice(outputsToRemove[i], 1)
-    }
-
-    // If we removed outputs, recalculate the fee with the new transaction size
-    if (outputsToRemove.length > 0) {
-      const newBytesAccum = transactionBytes(inputs, outputsCopy)
-      fee = ext.mul(feeRate, newBytesAccum)
     }
 
     // If we couldn't subtract all fees, return error
@@ -154,7 +225,7 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
         remainingFee,
         details: {
           markedOutputs: subtractFeeOutputs.length,
-          removedOutputs: outputsToRemove.length
+          removedOutputs: 0
         }
       }
     }
@@ -167,9 +238,10 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
   }
 
   // Normal case: add change output if needed
-  const changeDust = dustThreshold({}, feeRate, dustPolicy)
-  if (dustPolicy ? ext.gte(remainderAfterExtraOutput, changeDust) : ext.gt(remainderAfterExtraOutput, changeDust)) {
-    outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
+  const changeOutput = dustOptions(options).changeOutput
+  const changeDust = dustThreshold(changeOutput, feeRate, options)
+  if (ext.gte(remainderAfterExtraOutput, changeDust)) {
+    outputs = outputs.concat(Object.assign({}, changeOutput, { changeIndex: outputs.length, value: remainderAfterExtraOutput }))
   }
 
   const fee = ext.sub(inputTotal, sumOrNaN(outputs, txVersion))
@@ -212,6 +284,9 @@ function finalizeAssets (inputs, outputs, assetAllocations) {
 }
 
 module.exports = {
+  assetChangeOutput,
+  assetOutput,
+  dustOptions,
   dustThreshold,
   finalize,
   finalizeAssets,
@@ -221,5 +296,7 @@ module.exports = {
   sumForgiving,
   transactionBytes,
   uintOrNull,
+  validateAssetScripts,
+  validateDustOutputs,
   isNonAssetFunded
 }
