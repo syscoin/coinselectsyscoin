@@ -3,7 +3,7 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // add inputs until we reach or surpass the target value (or deplete)
 // worst-case: O(n)
-function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxTxSize) {
+function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxTxSize, dustPolicy) {
   // Default max transaction size (conservative limit for most networks)
   maxTxSize = maxTxSize || 99000 // 99KB - leaving room for signatures and safety margin
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
@@ -55,7 +55,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
   // is already enough input?
   if (!hasInvalidAmounts && !shouldUseAllInputs && ext.gte(inAccum, ext.add(outAccum, fee))) {
-    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
   }
 
   for (let i = 0; i < utxos.length; i++) {
@@ -74,7 +74,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 
         // Check transaction size limit
         if (bytesAccum.gt(new BN(maxTxSize))) {
-          return utils.finalize(inputs, outputs, feeRate, feeBytes)
+          return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
         }
 
         inAccum = ext.add(inAccum, utxoValue)
@@ -111,7 +111,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
       // Don't add this input, use what we have so far
       if ((shouldUseAllInputs || hasSomeSubtractFee) && inputs.length > 0) {
         // For sweep or subtractFeeFrom, use current inputs even if we hit size limit
-        return utils.finalize(inputs, outputs, feeRate, feeBytes)
+        return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
       }
       // For normal transactions, this means we can't fit enough inputs
       break
@@ -150,13 +150,13 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
       break
     }
 
-    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
   }
 
   // If sweep is specified and we've gone through all utxos,
   // use all inputs collected
   if (!hasInvalidAmounts && shouldUseAllInputs && inputs.length > 0) {
-    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
   }
 
   const calculatedFee = ext.mul(feeRate, bytesAccum)

@@ -23,6 +23,15 @@ Module | Algorithm | Re-orders UTXOs?
 **Note:** Each algorithm will add a change output if the `input - output - fee` value difference is over a dust threshold.
 This is calculated independently by `utils.finalize`, irrespective of the algorithm chosen, for the purposes of safety.
 
+`coinSelect` accepts an optional final `dustPolicy(output)` argument, returning a
+BN threshold in satoshis derived by the caller from the actual output script.
+This policy is independent of the transaction fee rate. The native policy path
+accepts equality, never drops a fee-subtracted recipient, and refuses when the
+fee cannot be paid while retaining every recipient above its threshold. Existing
+callers that omit this argument, including asset-carrier construction, retain
+their existing behavior. `coinSelectAssetGas` accepts the same optional final
+argument for a native transaction funded from asset-bearing inputs.
+
 **Pro-tip:** if you want to send-all inputs to an output address, `coinselectsyscoin/split` with a partial output (`.address` defined, no `.value`) can be used to send-all, while leaving an appropriate amount for the `fee`. 
 
 ## Example

@@ -31,7 +31,8 @@ function outputBytes (output) {
   return TX_OUTPUT_SIZE[output.type] || TX_OUTPUT_SIZE.LEGACY
 }
 
-function dustThreshold (output, feeRate) {
+function dustThreshold (output, feeRate, dustPolicy) {
+  if (dustPolicy) return dustPolicy(output)
   /* ... classify the output for input estimate  */
   return ext.mul(inputBytes(output), feeRate)
 }
@@ -67,7 +68,7 @@ function sumOrNaN (range) {
   }, ext.BN_ZERO)
 }
 
-function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
+function finalize (inputs, outputs, feeRate, feeBytes, txVersion, dustPolicy) {
   const bytesAccum = transactionBytes(inputs, outputs)
   const feeAfterExtraOutput = ext.mul(feeRate, ext.add(bytesAccum, feeBytes))
   const inputTotal = sumOrNaN(inputs)
@@ -106,7 +107,7 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
     for (const { output, index } of subtractFeeOutputs) {
       const outputValue = output.value
       let deduction = ext.BN_ZERO
-      const dust = dustThreshold(output, feeRate)
+      const dust = dustThreshold(output, feeRate, dustPolicy)
 
       if (!remainingFee.isZero()) {
         const maxDeduction = outputValue.sub(dust)
@@ -120,7 +121,9 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
       const newValue = outputValue.sub(deduction)
 
       // If the output value after deduction is at or below dust threshold, mark it for removal
-      if (newValue.lte(dust)) {
+      if (dustPolicy && newValue.lt(dust)) {
+        return { error: 'DUST_OUTPUT', fee, details: { outputIndex: index, minimum: dust } }
+      } else if (!dustPolicy && newValue.lte(dust)) {
         outputsToRemove.push(index)
         // If we're removing this output, the full value is effectively deducted
         remainingFee = remainingFee.sub(outputValue.sub(deduction))
@@ -164,7 +167,8 @@ function finalize (inputs, outputs, feeRate, feeBytes, txVersion) {
   }
 
   // Normal case: add change output if needed
-  if (ext.gt(remainderAfterExtraOutput, dustThreshold({}, feeRate))) {
+  const changeDust = dustThreshold({}, feeRate, dustPolicy)
+  if (dustPolicy ? ext.gte(remainderAfterExtraOutput, changeDust) : ext.gt(remainderAfterExtraOutput, changeDust)) {
     outputs = outputs.concat({ changeIndex: outputs.length, value: remainderAfterExtraOutput })
   }
 
