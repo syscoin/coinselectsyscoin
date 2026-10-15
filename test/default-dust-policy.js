@@ -63,6 +63,9 @@ test('callbacks are rejected without being invoked', () => {
   assert.strictEqual(called, false)
   assert.strictEqual(native(1000, 1, {}, { changeOutput: { scriptPubKey: () => p2wpkh } }).error, 'INVALID_DUST_OPTIONS')
 })
+test('only boolean true can mark an output for fee subtraction', () => {
+  for (const subtractFeeFrom of [false, 'false', 1]) assert.strictEqual(native(293, 1, { subtractFeeFrom }).error, 'DUST_OUTPUT')
+})
 test('default MAX floor is independent of a high transaction fee', () => {
   const result = candidate.coinSelect(coins(11700), [], [{ scriptPubKey: p2wpkh, value: new BN(11700), subtractFeeFrom: true }], new BN(100))
   assert.strictEqual(result.outputs[0].value.toString(), '400')

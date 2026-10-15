@@ -76,7 +76,7 @@ function validateDustOutputs (outputs, options) {
     for (let i = 0; i < outputs.length; i++) {
       const output = outputs[i]
       const minimum = dustThreshold(output, undefined, options)
-      if (uintOrNull(output.value) && !output.subtractFeeFrom && output.value.lt(minimum)) {
+      if (uintOrNull(output.value) && output.subtractFeeFrom !== true && output.value.lt(minimum)) {
         return { error: 'DUST_OUTPUT', fee: ext.BN_ZERO, details: { outputIndex: i, minimum } }
       }
     }
