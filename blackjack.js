@@ -3,7 +3,7 @@ const ext = require('./bn-extensions')
 const BN = require('bn.js')
 // only add inputs if they don't bust the target value (aka, exact match)
 // worst-case: O(n)
-function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize) {
+function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSize, dustPolicy) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
 
   // Blackjack doesn't make sense for subtract fee outputs - return empty to fall back to accumulative
@@ -42,9 +42,9 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
     feeBytes = ext.add(feeBytes, changeOutputBytes)
   }
   // is already enough input?
-  if (!hasInvalidAmounts && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes)
+  if (!hasInvalidAmounts && ext.gte(inAccum, ext.add(outAccum, fee))) return utils.finalize(inputs, outputs, feeRate, changeOutputBytes, undefined, dustPolicy)
 
-  const threshold = utils.dustThreshold({}, feeRate)
+  const threshold = utils.dustThreshold({}, feeRate, dustPolicy)
   for (let i = 0; i < utxos.length; i++) {
     const input = utxos[i]
     const inputBytes = utils.inputBytes(input)
@@ -76,7 +76,7 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
     // Don't call finalize if we have invalid amounts
     if (hasInvalidAmounts) break
 
-    return utils.finalize(inputs, outputs, feeRate, feeBytes)
+    return utils.finalize(inputs, outputs, feeRate, feeBytes, undefined, dustPolicy)
   }
   const calculatedFee = ext.mul(feeRate, bytesAccum)
 
