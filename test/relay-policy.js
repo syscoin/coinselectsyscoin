@@ -5,6 +5,7 @@ const BN = require('bn.js')
 const candidate = require('../')
 const fixtures = require('./fixtures')
 const { expand } = require('./_utils')
+const scriptPubKey = Buffer.from('0014' + '11'.repeat(20), 'hex')
 function copy (value) {
   if (BN.isBN(value)) return value.clone()
   if (Array.isArray(value)) return value.map(copy)
@@ -26,26 +27,26 @@ function canonical (value) {
   return value
 }
 for (const fixture of fixtures) {
-  test(`omitting native policy preserves fixture: ${fixture.description}`, () => {
+  test(`shared default policy fixture: ${fixture.description}`, () => {
     const run = lib => lib.coinSelect(expand(copy(fixture.inputs), true), [], expand(copy(fixture.outputs)), copy(fixture.feeRate))
     assert.deepStrictEqual(canonical(run(candidate)), canonical(fixture.expected))
   })
 }
-test('explicit relay policy allows MAX equality, independent of fee', () => {
+test('default relay policy allows MAX equality, independent of fee', () => {
   const result = candidate.coinSelect([{ type: 'BECH32', value: new BN(11594) }], [],
-    [{ value: new BN(11594), subtractFeeFrom: true }], new BN(100), 2, undefined, undefined, () => new BN(294))
+    [{ scriptPubKey, value: new BN(11594), subtractFeeFrom: true }], new BN(100))
   assert.strictEqual(result.outputs.length, 1)
   assert.strictEqual(result.outputs[0].value.toString(), '294')
   assert.strictEqual(result.fee.toString(), '11300')
 })
-test('explicit policy refuses an insufficient MAX without deleting its recipient', () => {
+test('default policy refuses an insufficient MAX without deleting its recipient', () => {
   const result = candidate.coinSelect([{ type: 'BECH32', value: new BN(406) }], [],
-    [{ value: new BN(406), subtractFeeFrom: true }], new BN(1), 2, undefined, undefined, () => new BN(294))
+    [{ scriptPubKey, value: new BN(406), subtractFeeFrom: true }], new BN(1))
   assert.strictEqual(result.error, 'SUBTRACT_FEE_FAILED')
   assert.strictEqual(result.outputs, undefined)
 })
 test('two same-identity MAX recipients remain ordered and distinct', () => {
   const result = candidate.coinSelect([{ type: 'BECH32', value: new BN(1000) }], [],
-    [{ address: 'same', value: new BN(400), subtractFeeFrom: true }, { address: 'same', value: new BN(600), subtractFeeFrom: true }], new BN(1), 2, undefined, undefined, () => new BN(294))
+    [{ address: 'same', scriptPubKey, value: new BN(400), subtractFeeFrom: true }, { address: 'same', scriptPubKey, value: new BN(600), subtractFeeFrom: true }], new BN(1))
   assert.deepStrictEqual(result.outputs.map(o => [o.address, o.value.toString()]), [['same', '294'], ['same', '559']])
 })

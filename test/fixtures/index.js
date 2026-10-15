@@ -68,7 +68,7 @@ module.exports = [{
   }
 },
 {
-  description: '1 output, sub-optimal inputs (if re-ordered), direct possible, but slightly higher fee',
+  description: '1 output, bounded relay dust selects accumulative change instead of excess fee',
   feeRate: new BN(10),
   inputs: [
     new BN(10000),
@@ -80,13 +80,16 @@ module.exports = [{
   ],
   expected: {
     inputs: [{
-      i: 0,
-      value: new BN(10000)
+      i: 1,
+      value: new BN(40000)
     }],
     outputs: [{
       value: new BN(6800)
+    }, {
+      changeIndex: 1,
+      value: new BN(30900)
     }],
-    fee: new BN(3200)
+    fee: new BN(2300)
   }
 },
 {
@@ -459,44 +462,15 @@ module.exports = [{
   description: 'not enough funds (no inputs), empty result (>1KiB)',
   feeRate: new BN(10),
   inputs: [],
-  outputs: [
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1),
-    new BN(1)
-  ],
+  // Preserve insufficient-funds/size coverage without an unrelated dust failure.
+  outputs: Array.from({ length: 29 }, () => new BN(1000)),
   expected: {
     fee: new BN(9970),
     error: 'INSUFFICIENT_FUNDS',
-    shortfall: new BN(9999),
+    shortfall: new BN(38970),
     details: {
       inputTotal: new BN(0),
-      outputTotal: new BN(29),
+      outputTotal: new BN(29000),
       requiredFee: new BN(9970),
       message: 'Not enough UTXOs to cover amount and fees'
     }

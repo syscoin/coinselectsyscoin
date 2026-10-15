@@ -3,8 +3,10 @@ const BN = require('bn.js')
 const ext = require('./bn-extensions')
 
 // split utxos between each output, ignores outputs with .value defined
-module.exports = function split (utxos, outputs, feeRate) {
+module.exports = function split (utxos, outputs, feeRate, options) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
+  const invalid = utils.validateDustOutputs(outputs, options)
+  if (invalid) return invalid
   const changeOutputBytes = utils.outputBytes({})
   const bytesAccum = utils.transactionBytes(utxos, outputs)
   const fee = ext.mul(feeRate, bytesAccum)
@@ -66,7 +68,7 @@ module.exports = function split (utxos, outputs, feeRate) {
     return a + !x.value
   }, 0)
 
-  if (ext.isZero(remaining) && unspecified === 0) return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
+  if (ext.isZero(remaining) && unspecified === 0) return utils.finalize(utxos, outputs, feeRate, changeOutputBytes, undefined, options)
 
   // Counts the number of split outputs left
   const splitOutputsCount = new BN(outputs.reduce(function (a, x) {
@@ -78,10 +80,12 @@ module.exports = function split (utxos, outputs, feeRate) {
 
   // ensure every output is either user defined, or over the threshold
   if (!outputs.every(function (x) {
-    return x.value !== undefined || ext.gt(splitValue, utils.dustThreshold(x, feeRate))
+    return x.value !== undefined || ext.gte(splitValue, utils.dustThreshold(x, feeRate, options))
   })) {
     // If we can't create any outputs due to insufficient funds after fees, report as insufficient funds
-    const totalRequired = ext.add(fee, ext.mul(utils.dustThreshold({}, feeRate), splitOutputsCount))
+    const dustTotal = outputs.filter(x => x.value === undefined)
+      .reduce((total, output) => total.add(utils.dustThreshold(output, feeRate, options)), ext.BN_ZERO)
+    const totalRequired = ext.add(outAccum, fee, dustTotal)
     if (ext.lt(inAccum, totalRequired)) {
       const shortfall = ext.sub(totalRequired, inAccum)
       return {
@@ -113,5 +117,5 @@ module.exports = function split (utxos, outputs, feeRate) {
     return y
   })
 
-  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes)
+  return utils.finalize(utxos, outputs, feeRate, changeOutputBytes, undefined, options)
 }
