@@ -106,7 +106,7 @@ function blackjack (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobSi
 // average-case: O(n*log(n))
 function blackjackAsset (utxos, assetMap, feeRate, txVersion, options) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
-  const invalid = utils.validateDustOutputs([], options)
+  const invalid = utils.validateAssetScripts(assetMap, options)
   if (invalid) return invalid
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const mapAssetAmounts = new Map()

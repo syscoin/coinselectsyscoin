@@ -187,7 +187,7 @@ function accumulative (utxos, inputs, outputs, feeRate, memoSize, blobSize, maxT
 // worst-case: O(n)
 function accumulativeAsset (utxoAssets, assetMap, feeRate, txVersion, options) {
   if (!utils.uintOrNull(feeRate)) return { error: 'INVALID_FEE_RATE' }
-  const invalid = utils.validateDustOutputs([], options)
+  const invalid = utils.validateAssetScripts(assetMap, options)
   if (invalid) return invalid
   const isNonAssetFunded = utils.isNonAssetFunded(txVersion)
   const assetAllocations = []

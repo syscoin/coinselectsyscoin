@@ -34,7 +34,8 @@ test('missing type is conservative LEGACY and actual script wins over hints/data
   assert.strictEqual(utils.dustThreshold({ type: 'constructor' }).toString(), '546')
   assert.strictEqual(utils.dustThreshold({ type: 'LEGACY', script: Buffer.from('6a', 'hex'), scriptPubKey: p2wpkh }).toString(), '294')
   assert.strictEqual(utils.dustThreshold({ script: p2wpkh, scriptPubKey: Buffer.from('6a', 'hex') }).toString(), '0')
-  assert.strictEqual(utils.dustThreshold({ script: p2pkh }).toString(), '546')
+  assert.strictEqual(utils.dustThreshold({ script: p2pkh }).toString(), '0')
+  assert.strictEqual(utils.dustThreshold({ scriptPubKey: p2pkh }).toString(), '546')
 })
 test('dust metadata does not change the existing transaction fee estimator', () => {
   assert.strictEqual(utils.outputBytes({ scriptPubKey: p2wpkh }).toString(), '34')

@@ -52,7 +52,7 @@ function dustThreshold (output, feeRate, options) {
   // feeRate is retained for API compatibility; relay policy is independent.
   const policy = dustOptions(options)
   output = output || {}
-  const rawScript = output.scriptPubKey === undefined ? output.script : output.scriptPubKey
+  const rawScript = output.scriptPubKey
   let size
   if (rawScript !== undefined) {
     if (!(rawScript instanceof Uint8Array)) throw new TypeError('Invalid output script')
@@ -62,6 +62,10 @@ function dustThreshold (output, feeRate, options) {
       (script[0] === 0 || (script[0] >= 0x51 && script[0] <= 0x60)) &&
       script[1] >= 2 && script[1] <= 40 && script[1] + 2 === script.length
     size = 8 + (script.length < 253 ? 1 : 3) + script.length + (witness ? 67 : 148)
+  } else if (output.script !== undefined) {
+    // The legacy API stores OP_RETURN data here, not the full locking script.
+    if (!(output.script instanceof Uint8Array)) throw new TypeError('Invalid output script')
+    return new BN(0)
   } else {
     const sizes = { LEGACY: 182, P2SH: 180, BECH32: 98, P2WPKH: 98, P2WSH: 110, P2TR: 110 }
     size = Object.prototype.hasOwnProperty.call(sizes, output.type) ? sizes[output.type] : sizes.LEGACY
@@ -82,6 +86,19 @@ function validateDustOutputs (outputs, options) {
     }
   } catch (error) {
     return { error: error.message === 'Invalid output script' ? 'INVALID_OUTPUT_SCRIPT' : 'INVALID_DUST_OPTIONS' }
+  }
+  return null
+}
+
+function validateAssetScripts (assetMap, options) {
+  const invalid = validateDustOutputs([], options)
+  if (invalid) return invalid
+  if (!assetMap) return null
+  for (const asset of assetMap.values()) {
+    if (asset.changeScript !== undefined && !(asset.changeScript instanceof Uint8Array)) return { error: 'INVALID_OUTPUT_SCRIPT' }
+    for (const output of asset.outputs || []) {
+      if (output.scriptPubKey !== undefined && !(output.scriptPubKey instanceof Uint8Array)) return { error: 'INVALID_OUTPUT_SCRIPT' }
+    }
   }
   return null
 }
@@ -279,6 +296,7 @@ module.exports = {
   sumForgiving,
   transactionBytes,
   uintOrNull,
+  validateAssetScripts,
   validateDustOutputs,
   isNonAssetFunded
 }

@@ -31,7 +31,7 @@ function coinSelect (utxos, inputs, outputs, feeRate, txVersion, memoSize, blobS
 }
 
 function coinSelectAsset (utxos, assetMap, feeRate, txVersion, options) {
-  const invalid = utils.validateDustOutputs([], options)
+  const invalid = utils.validateAssetScripts(assetMap, options)
   if (invalid) return invalid
   const utxoAssets = utxos.filter(utxo => utxo.assetInfo !== undefined)
   // attempt to use the blackjack strategy first (no change output)
@@ -119,7 +119,7 @@ function syncAllocationsWithInOut (assetAllocations, inputs, outputs, feeRate, t
 }
 
 function coinSelectAssetGas (assetAllocations, utxos, inputs, outputs, feeRate, txVersion, assets, assetMap, memoSize, options) {
-  const invalid = utils.validateDustOutputs(outputs, options)
+  const invalid = utils.validateDustOutputs(outputs, options) || utils.validateAssetScripts(assetMap, options)
   if (invalid) return invalid
   // ensure inputs defaults to empty array if undefined/null
   inputs = inputs || []

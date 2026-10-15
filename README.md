@@ -26,7 +26,9 @@ This is calculated independently by `utils.finalize`, irrespective of the algori
 The shared default dust policy applies to native outputs and SPT carriers. It
 uses Core's serialized-output-plus-spend-size rule at **3000 sat/kvB**, independent
 of the chosen transaction fee rate. Actual Buffer/Uint8Array `output.scriptPubKey` metadata
-takes precedence over `output.script`, then type hints. `scriptPubKey` does not
+is the authoritative full locking script. Without it, legacy `output.script` is
+OP_RETURN data payload (zero dust floor regardless of its first byte), not a
+spend locking script; otherwise the type hint is used. `scriptPubKey` does not
 change the existing transaction-size estimator or replace the builder's data
 `.script`. OP_RETURN/unspendable scripts have a zero dust threshold. Missing
 script metadata falls back to LEGACY (546 sats); type hints support LEGACY,
@@ -54,6 +56,8 @@ MAX or dusty recipients return an error, and native change below its floor is
 absorbed into the fee. Builders must still validate final scripts/amounts after
 their own output transformations. This models Core's default policy, not an
 assertion about an operator's custom relay settings.
+Malformed recipient `scriptPubKey` or asset `changeScript` returns a structured
+`INVALID_OUTPUT_SCRIPT` before asset selection or allocation synchronization.
 
 **Pro-tip:** if you want to send-all inputs to an output address, `coinselectsyscoin/split` with a partial output (`.address` defined, no `.value`) can be used to send-all, while leaving an appropriate amount for the `fee`. 
 
